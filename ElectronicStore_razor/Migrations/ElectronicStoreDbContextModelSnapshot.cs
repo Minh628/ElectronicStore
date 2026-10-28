@@ -4,19 +4,16 @@ using ElectronicStore_razor.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace ElectronicStore_razor.Data.Migrations
+namespace ElectronicStore_razor.Migrations
 {
     [DbContext(typeof(ElectronicStoreDbContext))]
-    [Migration("20261026115046_InitialCreate")]
-    partial class InitialCreate
+    partial class ElectronicStoreDbContextModelSnapshot : ModelSnapshot
     {
-        /// <inheritdoc />
-        protected override void BuildTargetModel(ModelBuilder modelBuilder)
+        protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -185,7 +182,6 @@ namespace ElectronicStore_razor.Data.Migrations
                         .HasColumnType("decimal(18, 2)");
 
                     b.Property<string>("UserId")
-                        .IsRequired()
                         .HasMaxLength(450)
                         .HasColumnType("nvarchar(450)");
 
@@ -420,8 +416,6 @@ namespace ElectronicStore_razor.Data.Migrations
                     b.HasOne("ElectronicStore_razor.Models.Entities.ApplicationUser", "User")
                         .WithMany("Orders")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
                         .HasConstraintName("FK_Orders_AspNetUsers");
 
                     b.Navigation("User");

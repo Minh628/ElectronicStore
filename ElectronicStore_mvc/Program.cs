@@ -71,6 +71,7 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<ElectronicStoreDbContext>();
+    DbSeeder.SeedSampleDataAsync(context).GetAwaiter().GetResult();
     DbSeeder.FixVietnameseEncoding(context);
     DbSeeder.SeedIdentityAsync(scope.ServiceProvider).GetAwaiter().GetResult();
 }

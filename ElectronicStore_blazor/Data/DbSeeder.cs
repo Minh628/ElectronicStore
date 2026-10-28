@@ -126,6 +126,157 @@ public static class DbSeeder
     }
 
     /// <summary>
+    /// Tự động khởi tạo dữ liệu mẫu cho Categories và Products nếu bảng đang trống
+    /// </summary>
+    public static async Task SeedSampleDataAsync(ElectronicStoreDbContext context)
+    {
+        try
+        {
+            // 1. Khởi tạo danh mục nếu chưa có dữ liệu
+            if (!context.Categories.Any())
+            {
+                var defaultCategories = new List<Category>
+                {
+                    new Category { Name = "Điện thoại thông minh", Description = "Các dòng smartphone cao cấp và tầm trung", IsActive = true },
+                    new Category { Name = "Laptop & Máy tính xách tay", Description = "Laptop văn phòng, đồ họa, gaming", IsActive = true },
+                    new Category { Name = "Máy tính bảng (Tablet)", Description = "Tablet phục vụ học tập, giải trí và làm việc", IsActive = true },
+                    new Category { Name = "Tai nghe & Âm thanh", Description = "Tai nghe chống ồn, loa bluetooth cao cấp", IsActive = true },
+                    new Category { Name = "Phụ kiện & Linh kiện", Description = "Sạc nhanh, bàn phím cơ, chuột gaming", IsActive = true }
+                };
+
+                await context.Categories.AddRangeAsync(defaultCategories);
+                await context.SaveChangesAsync();
+            }
+
+            // 2. Khởi tạo danh sách sản phẩm nếu chưa có dữ liệu
+            if (!context.Products.Any())
+            {
+                var categories = context.Categories.ToList();
+                var phoneCat = categories.FirstOrDefault(c => c.Name.Contains("Điện thoại")) ?? categories[0];
+                var laptopCat = categories.FirstOrDefault(c => c.Name.Contains("Laptop")) ?? categories[0];
+                var tabletCat = categories.FirstOrDefault(c => c.Name.Contains("Máy tính bảng")) ?? categories[0];
+                var audioCat = categories.FirstOrDefault(c => c.Name.Contains("Tai nghe")) ?? categories[0];
+                var accessoryCat = categories.FirstOrDefault(c => c.Name.Contains("Phụ kiện")) ?? categories[0];
+
+                var defaultProducts = new List<Product>
+                {
+                    new Product
+                    {
+                        CategoryId = phoneCat.Id,
+                        Name = "iPhone 15 Pro Max 256GB",
+                        Brand = "Apple",
+                        Specifications = "Chip A17 Pro, RAM 8GB, Màn hình 6.7 inch OLED 120Hz, Pin 4422mAh",
+                        Price = 29990000m,
+                        Quantity = 20,
+                        WarrantyMonths = 12,
+                        ImageUrl = "https://images.unsplash.com/photo-1695048133142-1a20484d2569",
+                        Description = "Flagship cao cấp nhất của Apple với khung viền Titan và camera zoom quang học 5x.",
+                        IsActive = true
+                    },
+                    new Product
+                    {
+                        CategoryId = phoneCat.Id,
+                        Name = "Samsung Galaxy S24 Ultra 512GB",
+                        Brand = "Samsung",
+                        Specifications = "Chip Snapdragon 8 Gen 3, RAM 12GB, Bút S-Pen, Camera 200MP",
+                        Price = 28490000m,
+                        Quantity = 15,
+                        WarrantyMonths = 12,
+                        ImageUrl = "https://images.unsplash.com/photo-1610945265064-0e34e5519bbf",
+                        Description = "Điện thoại tích hợp Galaxy AI thông minh, hỗ trợ làm việc và nhiếp ảnh đỉnh cao.",
+                        IsActive = true
+                    },
+                    new Product
+                    {
+                        CategoryId = laptopCat.Id,
+                        Name = "MacBook Pro 14 M3 Pro",
+                        Brand = "Apple",
+                        Specifications = "Chip Apple M3 Pro 11-core, RAM 18GB, SSD 512GB, Liquid Retina XDR 120Hz",
+                        Price = 49990000m,
+                        Quantity = 10,
+                        WarrantyMonths = 12,
+                        ImageUrl = "https://images.unsplash.com/photo-1517336714731-489689fd1ca8",
+                        Description = "Hiệu năng đồ họa vượt trội, thời lượng pin lên đến 18 giờ liên tục.",
+                        IsActive = true
+                    },
+                    new Product
+                    {
+                        CategoryId = laptopCat.Id,
+                        Name = "ASUS ROG Zephyrus G16 (2024)",
+                        Brand = "ASUS",
+                        Specifications = "Intel Core Ultra 9, RTX 4080 12GB, RAM 32GB, OLED 240Hz",
+                        Price = 64990000m,
+                        Quantity = 8,
+                        WarrantyMonths = 24,
+                        ImageUrl = "https://images.unsplash.com/photo-1603302576837-37561b2e2302",
+                        Description = "Laptop gaming mỏng nhẹ cao cấp hàng đầu với màn hình chuẩn điện ảnh OLED ROG Nebula.",
+                        IsActive = true
+                    },
+                    new Product
+                    {
+                        CategoryId = tabletCat.Id,
+                        Name = "iPad Air M2 11 inch Wi-Fi 128GB",
+                        Brand = "Apple",
+                        Specifications = "Chip Apple M2, RAM 8GB, Màn hình Liquid Retina, Hỗ trợ Apple Pencil Pro",
+                        Price = 16990000m,
+                        Quantity = 25,
+                        WarrantyMonths = 12,
+                        ImageUrl = "https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0",
+                        Description = "Thiết kế siêu mỏng nhẹ, hiệu năng cực mạnh hỗ trợ học tập và thiết kế đồ họa.",
+                        IsActive = true
+                    },
+                    new Product
+                    {
+                        CategoryId = audioCat.Id,
+                        Name = "Tai nghe Sony WH-1000XM5",
+                        Brand = "Sony",
+                        Specifications = "Chống ồn chủ động ANC đỉnh cao, Driver 30mm, Pin 30 giờ, Bluetooth 5.2",
+                        Price = 7990000m,
+                        Quantity = 30,
+                        WarrantyMonths = 12,
+                        ImageUrl = "https://images.unsplash.com/photo-1505740420928-5e560c06d30e",
+                        Description = "Tai nghe trùm đầu chống ồn số 1 thế giới với chất âm Hi-Res sắc nét.",
+                        IsActive = true
+                    },
+                    new Product
+                    {
+                        CategoryId = audioCat.Id,
+                        Name = "Apple AirPods Pro 2 (USB-C)",
+                        Brand = "Apple",
+                        Specifications = "Chip H2, Chống ồn gấp 2 lần, Chế độ thích ứng thông minh, Hộp sạc MagSafe",
+                        Price = 5690000m,
+                        Quantity = 40,
+                        WarrantyMonths = 12,
+                        ImageUrl = "https://images.unsplash.com/photo-1600294037681-c80b4cb5b434",
+                        Description = "Tai nghe in-ear không dây tiện dụng, đồng bộ hoàn hảo trong hệ sinh thái Apple.",
+                        IsActive = true
+                    },
+                    new Product
+                    {
+                        CategoryId = accessoryCat.Id,
+                        Name = "Bàn phím cơ không dây NuPhy Air75 V2",
+                        Brand = "NuPhy",
+                        Specifications = "Low Profile mechanical switch, kết nối 3 chế độ (2.4G/BT/Dây), RGB 16.8M màu",
+                        Price = 2890000m,
+                        Quantity = 18,
+                        WarrantyMonths = 12,
+                        ImageUrl = "https://images.unsplash.com/photo-1587829741301-dc798b83add3",
+                        Description = "Bàn phím cơ siêu mỏng thích hợp mang đi cà phê, làm việc với cả Mac và Windows.",
+                        IsActive = true
+                    }
+                };
+
+                await context.Products.AddRangeAsync(defaultProducts);
+                await context.SaveChangesAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[DbSeeder] Lỗi khi seed Categories/Products: {ex.Message}");
+        }
+    }
+
+    /// <summary>
     /// Hàm tự động khắc phục lỗi font tiếng Việt (Mojibake/dấu hỏi) trong Database
     /// Cập nhật trực tiếp qua Entity Framework Core bằng chuỗi Unicode C# chuẩn UTF-16
     /// </summary>

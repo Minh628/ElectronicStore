@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace ElectronicStore_blazor.Data.Migrations
+namespace ElectronicStore_blazor.Migrations
 {
     [DbContext(typeof(ElectronicStoreDbContext))]
     partial class ElectronicStoreDbContextModelSnapshot : ModelSnapshot
@@ -182,7 +182,6 @@ namespace ElectronicStore_blazor.Data.Migrations
                         .HasColumnType("decimal(18, 2)");
 
                     b.Property<string>("UserId")
-                        .IsRequired()
                         .HasMaxLength(450)
                         .HasColumnType("nvarchar(450)");
 
@@ -417,8 +416,6 @@ namespace ElectronicStore_blazor.Data.Migrations
                     b.HasOne("ElectronicStore_blazor.Models.Entities.ApplicationUser", "User")
                         .WithMany("Orders")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
                         .HasConstraintName("FK_Orders_AspNetUsers");
 
                     b.Navigation("User");

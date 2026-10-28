@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Raymond\\Desktop\\BAITAP.NET\\ElectronicStore_razor\\ElectronicStore_razor.csproj": {}
+    "C:\\Users\\DELL\\Desktop\\ElectronicStore\\ElectronicStore_razor\\ElectronicStore_razor.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Raymond\\Desktop\\BAITAP.NET\\ElectronicStore_razor\\ElectronicStore_razor.csproj": {
+    "C:\\Users\\DELL\\Desktop\\ElectronicStore\\ElectronicStore_razor\\ElectronicStore_razor.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Raymond\\Desktop\\BAITAP.NET\\ElectronicStore_razor\\ElectronicStore_razor.csproj",
+        "projectUniqueName": "C:\\Users\\DELL\\Desktop\\ElectronicStore\\ElectronicStore_razor\\ElectronicStore_razor.csproj",
         "projectName": "ElectronicStore_razor",
-        "projectPath": "C:\\Users\\Raymond\\Desktop\\BAITAP.NET\\ElectronicStore_razor\\ElectronicStore_razor.csproj",
-        "packagesPath": "C:\\Users\\Raymond\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Raymond\\Desktop\\BAITAP.NET\\ElectronicStore_razor\\obj\\",
+        "projectPath": "C:\\Users\\DELL\\Desktop\\ElectronicStore\\ElectronicStore_razor\\ElectronicStore_razor.csproj",
+        "packagesPath": "C:\\Users\\DELL\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\DELL\\Desktop\\ElectronicStore\\ElectronicStore_razor\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\Raymond\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\DELL\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net10.0"

@@ -43,6 +43,8 @@ using (var scope = app.Services.CreateScope())
 {
     var factory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<ElectronicStoreDbContext>>();
     using var context = factory.CreateDbContext();
+    // Tự động nạp dữ liệu mẫu cho Categories và Products nếu database chưa có
+    DbSeeder.SeedSampleDataAsync(context).GetAwaiter().GetResult();
     DbSeeder.FixVietnameseEncoding(context);
     DbSeeder.SeedIdentityAsync(scope.ServiceProvider).GetAwaiter().GetResult();
 }

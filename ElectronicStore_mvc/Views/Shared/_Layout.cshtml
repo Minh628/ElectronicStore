@@ -72,10 +72,10 @@
                                 @if (User.IsInRole("Admin"))
                                 {
                                     <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item py-2 fw-semibold text-primary" asp-controller="Admin" asp-action="Products">Quản trị: Sản phẩm</a></li>
-                                    <li><a class="dropdown-item py-2 fw-semibold text-primary" asp-controller="Admin" asp-action="Orders">Quản trị: Đơn hàng</a></li>
-                                    <li><a class="dropdown-item py-2 fw-semibold text-primary" asp-controller="Admin" asp-action="Categories">Quản trị: Danh mục</a></li>
-                                    <li><a class="dropdown-item py-2 fw-semibold text-primary" asp-controller="Admin" asp-action="Accounts">Quản trị: Tài khoản</a></li>
+                                    <li><a class="dropdown-item py-2 fw-semibold text-primary" asp-area="Admin" asp-controller="Admin" asp-action="Products">Quản trị: Sản phẩm</a></li>
+                                    <li><a class="dropdown-item py-2 fw-semibold text-primary" asp-area="Admin" asp-controller="Admin" asp-action="Orders">Quản trị: Đơn hàng</a></li>
+                                    <li><a class="dropdown-item py-2 fw-semibold text-primary" asp-area="Admin" asp-controller="Admin" asp-action="Categories">Quản trị: Danh mục</a></li>
+                                    <li><a class="dropdown-item py-2 fw-semibold text-primary" asp-area="Admin" asp-controller="Admin" asp-action="Accounts">Quản trị: Tài khoản</a></li>
                                 }
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item py-2 text-danger fw-semibold" asp-controller="Account" asp-action="Logout">Đăng xuất</a></li>

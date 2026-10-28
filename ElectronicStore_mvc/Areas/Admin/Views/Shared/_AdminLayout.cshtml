@@ -26,7 +26,7 @@
         <!-- ================= SIDEBAR CỐ ĐỊNH ================= -->
         <aside class="admin-sidebar" id="adminSidebar">
             <!-- Brand Logo -->
-            <a class="admin-sidebar-brand" asp-controller="Admin" asp-action="Products">
+            <a class="admin-sidebar-brand" asp-area="Admin" asp-controller="Admin" asp-action="Products">
                 <div class="d-flex align-items-center justify-content-center rounded-3 text-white shadow-sm"
                      style="width: 38px; height: 38px; background: linear-gradient(135deg, #2563eb, #3b82f6);">
                     <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -44,7 +44,7 @@
             <!-- Sidebar Navigation Menu -->
             <nav class="admin-sidebar-nav">
                 <div class="admin-nav-heading">Quản Lý Bán Hàng</div>
-                <a class="admin-nav-item @(ViewContext.RouteData.Values["action"]?.ToString() == "Products" ? "active" : "")" asp-controller="Admin" asp-action="Products">
+                <a class="admin-nav-item @(ViewContext.RouteData.Values["action"]?.ToString() == "Products" ? "active" : "")" asp-area="Admin" asp-controller="Admin" asp-action="Products">
                     <div class="d-flex align-items-center">
                         <svg class="admin-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
@@ -53,7 +53,7 @@
                     </div>
                 </a>
 
-                <a class="admin-nav-item @(ViewContext.RouteData.Values["action"]?.ToString() == "Categories" ? "active" : "")" asp-controller="Admin" asp-action="Categories">
+                <a class="admin-nav-item @(ViewContext.RouteData.Values["action"]?.ToString() == "Categories" ? "active" : "")" asp-area="Admin" asp-controller="Admin" asp-action="Categories">
                     <div class="d-flex align-items-center">
                         <svg class="admin-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
@@ -62,7 +62,7 @@
                     </div>
                 </a>
 
-                <a class="admin-nav-item @(ViewContext.RouteData.Values["action"]?.ToString() == "Orders" ? "active" : "")" asp-controller="Admin" asp-action="Orders">
+                <a class="admin-nav-item @(ViewContext.RouteData.Values["action"]?.ToString() == "Orders" ? "active" : "")" asp-area="Admin" asp-controller="Admin" asp-action="Orders">
                     <div class="d-flex align-items-center">
                         <svg class="admin-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
@@ -72,7 +72,7 @@
                 </a>
 
                 <div class="admin-nav-heading mt-3">Hệ Thống</div>
-                <a class="admin-nav-item @(ViewContext.RouteData.Values["action"]?.ToString() == "Accounts" ? "active" : "")" asp-controller="Admin" asp-action="Accounts">
+                <a class="admin-nav-item @(ViewContext.RouteData.Values["action"]?.ToString() == "Accounts" ? "active" : "")" asp-area="Admin" asp-controller="Admin" asp-action="Accounts">
                     <div class="d-flex align-items-center">
                         <svg class="admin-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
@@ -95,11 +95,11 @@
                     </div>
                 </div>
                 <div class="d-flex gap-2">
-                    <a asp-controller="Home" asp-action="Index" target="_blank" class="btn btn-outline-light btn-sm w-50 py-1.5 small rounded-3 d-flex align-items-center justify-content-center gap-1">
+                    <a asp-area="" asp-controller="Home" asp-action="Index" target="_blank" class="btn btn-outline-light btn-sm w-50 py-1.5 small rounded-3 d-flex align-items-center justify-content-center gap-1">
                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                         <span>Cửa hàng</span>
                     </a>
-                    <a asp-controller="Account" asp-action="AdminLogout" class="btn btn-danger btn-sm w-50 py-1.5 small rounded-3 d-flex align-items-center justify-content-center gap-1 border-0">
+                    <a asp-area="" asp-controller="Account" asp-action="AdminLogout" class="btn btn-danger btn-sm w-50 py-1.5 small rounded-3 d-flex align-items-center justify-content-center gap-1 border-0">
                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
                         <span>Thoát</span>
                     </a>
@@ -124,7 +124,7 @@
                 </div>
 
                 <div class="d-flex align-items-center gap-3">
-                    <a asp-controller="Home" asp-action="Index" target="_blank" class="btn btn-sm btn-outline-secondary rounded-pill px-3 d-flex align-items-center gap-1.5">
+                    <a asp-area="" asp-controller="Home" asp-action="Index" target="_blank" class="btn btn-sm btn-outline-secondary rounded-pill px-3 d-flex align-items-center gap-1.5">
                         <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                         <span class="small fw-semibold">Xem trang khách hàng</span>
                     </a>

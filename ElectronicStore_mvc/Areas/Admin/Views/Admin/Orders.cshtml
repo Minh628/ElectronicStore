@@ -3,9 +3,9 @@
     ViewData["Title"] = "Admin - Duyệt Đơn Hàng";
     string? selectedStatus = ViewBag.SelectedStatus;
     var totalOrdersCount = ViewBag.TotalOrdersCount ?? Model.Count;
-    var pendingCount = ViewBag.PendingOrdersCount ?? Model.Count(o => ElectronicStore_mvc.Controllers.AdminController.NormalizeStatus(o.OrderStatus) == "Pending");
-    var shippingCount = ViewBag.ShippingOrdersCount ?? Model.Count(o => ElectronicStore_mvc.Controllers.AdminController.NormalizeStatus(o.OrderStatus) == "Shipping");
-    var completedCount = ViewBag.CompletedOrdersCount ?? Model.Count(o => ElectronicStore_mvc.Controllers.AdminController.NormalizeStatus(o.OrderStatus) == "Completed");
+    var pendingCount = ViewBag.PendingOrdersCount ?? Model.Count(o => ElectronicStore_mvc.Areas.Admin.Controllers.AdminController.NormalizeStatus(o.OrderStatus) == "Pending");
+    var shippingCount = ViewBag.ShippingOrdersCount ?? Model.Count(o => ElectronicStore_mvc.Areas.Admin.Controllers.AdminController.NormalizeStatus(o.OrderStatus) == "Shipping");
+    var completedCount = ViewBag.CompletedOrdersCount ?? Model.Count(o => ElectronicStore_mvc.Areas.Admin.Controllers.AdminController.NormalizeStatus(o.OrderStatus) == "Completed");
 }
 
 <style>
@@ -261,7 +261,7 @@
                             </td>
                             <td>
                                 @{
-                                    var normStatus = ElectronicStore_mvc.Controllers.AdminController.NormalizeStatus(o.OrderStatus);
+                                    var normStatus = ElectronicStore_mvc.Areas.Admin.Controllers.AdminController.NormalizeStatus(o.OrderStatus);
                                     var (bClass, bText) = normStatus switch
                                     {
                                         "Pending" => ("pending", "Chờ duyệt"),

@@ -5,14 +5,13 @@ using Microsoft.EntityFrameworkCore;
 using ElectronicStore_mvc.Data;
 using ElectronicStore_mvc.Models.Entities;
 
-namespace ElectronicStore_mvc.Controllers;
+using ElectronicStore_mvc.Areas.Admin.Models;
 
-public class UserAccountViewModel
-{
-    public ApplicationUser User { get; set; } = null!;
-    public string Role { get; set; } = "Customer";
-}
+namespace ElectronicStore_mvc.Areas.Admin.Controllers;
 
+
+
+[Area("Admin")]
 [Authorize(Roles = "Admin")]
 public class AdminController : Controller
 {

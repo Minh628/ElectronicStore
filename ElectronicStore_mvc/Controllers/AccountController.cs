@@ -32,7 +32,7 @@ public class AccountController : Controller
     {
         if (User.Identity != null && User.Identity.IsAuthenticated && User.IsInRole("Admin"))
         {
-            return RedirectToAction("Products", "Admin");
+            return RedirectToAction("Products", "Admin", new { area = "Admin" });
         }
 
         ViewBag.ReturnUrl = returnUrl;
@@ -82,7 +82,7 @@ public class AccountController : Controller
             {
                 return Redirect(returnUrl);
             }
-            return RedirectToAction("Products", "Admin");
+            return RedirectToAction("Products", "Admin", new { area = "Admin" });
         }
 
         ViewBag.ErrorMessage = "Tài khoản hoặc mật khẩu quản trị không chính xác!";
@@ -123,7 +123,7 @@ public class AccountController : Controller
 
             if (await _userManager.IsInRoleAsync(user, "Admin"))
             {
-                return RedirectToAction("Products", "Admin");
+                return RedirectToAction("Products", "Admin", new { area = "Admin" });
             }
 
             return RedirectToAction("Index", "Home");

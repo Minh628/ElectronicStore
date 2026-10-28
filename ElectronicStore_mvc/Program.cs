@@ -92,7 +92,12 @@ app.UseAuthorization();
 
 app.MapStaticAssets();
 
-// Cấu hình các Route ngắn thân thiện đồng bộ 100% với Blazor
+// 1. Cấu hình Route cho Area (Admin)
+app.MapControllerRoute(
+    name: "areas",
+    pattern: "{area:exists}/{controller=Admin}/{action=Index}/{id?}");
+
+// 2. Cấu hình các Route ngắn thân thiện đồng bộ 100% với Blazor
 app.MapControllerRoute(
     name: "product_detail",
     pattern: "product/{id?}",

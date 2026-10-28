@@ -1,0 +1,19 @@
+@{
+    ViewData["Title"] = "Không Có Quyền Truy Cập";
+}
+
+<div class="container py-5 text-center">
+    <div class="card bg-white border border-glass rounded-4 p-5 mx-auto shadow-sm" style="max-width: 500px;">
+        <i class="bi bi-shield-x fs-1 text-danger mb-3 d-block" style="font-size: 4rem !important;"></i>
+        <h1 class="h3 fw-bold text-dark mb-2">Truy Cập Bị Từ Chối</h1>
+        <p class="text-secondary mb-4">Bạn không có quyền quản trị để truy cập vào phân hệ này.</p>
+        <div class="d-flex justify-content-center gap-2">
+            <a asp-controller="Home" asp-action="Index" class="btn btn-primary px-4 py-2 rounded-pill">
+                Về trang chủ
+            </a>
+            <a asp-action="Login" class="btn btn-outline-secondary px-4 py-2 rounded-pill">
+                Đổi tài khoản
+            </a>
+        </div>
+    </div>
+</div>

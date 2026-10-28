@@ -1,0 +1,461 @@
+@page
+@model ElectronicStore_razor.Pages.Admin.OrdersModel
+@{
+    ViewData["Title"] = "Admin - Duyệt Đơn Hàng";
+    var pendingCount = Model.PendingOrdersCount;
+    var shippingCount = Model.ShippingOrdersCount;
+    var completedCount = Model.CompletedOrdersCount;
+    var totalOrdersCount = Model.TotalOrdersCount;
+}
+
+<style>
+    @@media print {
+        body * { visibility: hidden; }
+        #orderDetailModal, #orderDetailModal * { visibility: visible; }
+        #orderDetailModal {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            background: white !important;
+        }
+        .modal-footer, .btn-close { display: none !important; }
+        .admin-sidebar, .admin-topbar, footer { display: none !important; }
+    }
+</style>
+
+<div class="container-fluid p-0">
+    <!-- Tiêu Đề -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <h3 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
+                <span>Quản Lý & Duyệt Đơn Hàng</span>
+                <span class="badge bg-primary rounded-pill fs-6 px-3">@Model.Orders.Count đơn hàng</span>
+            </h3>
+            <p class="text-secondary small mb-0">Theo dõi tiến độ từ Tiếp nhận đơn, Đã duyệt, Đang giao đến Hoàn thành.</p>
+        </div>
+    </div>
+
+    <!-- Alert Notification -->
+    @if (!string.IsNullOrEmpty(Model.AlertMessage))
+    {
+        <div class="alert alert-@(Model.AlertType ?? "success") alert-dismissible fade show rounded-3 mb-4 shadow-sm" role="alert">
+            <div class="d-flex align-items-center gap-2">
+                <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                </svg>
+                <div>@Model.AlertMessage</div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- ================= 1. KPI SUMMARY CARDS ================= -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-xl-3">
+            <div class="admin-stat-card">
+                <div>
+                    <div class="stat-label">Tổng đơn hiển thị</div>
+                    <div class="stat-value">@totalOrdersCount</div>
+                    <div class="stat-subtext">Trong hệ thống</div>
+                </div>
+                <div class="stat-icon-wrap blue">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="admin-stat-card">
+                <div>
+                    <div class="stat-label">Chờ duyệt</div>
+                    <div class="stat-value text-warning">@pendingCount</div>
+                    <div class="stat-subtext">Cần xử lý ngay</div>
+                </div>
+                <div class="stat-icon-wrap amber">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="admin-stat-card">
+                <div>
+                    <div class="stat-label">Đang giao</div>
+                    <div class="stat-value text-info">@shippingCount</div>
+                    <div class="stat-subtext">Đang phát cho khách</div>
+                </div>
+                <div class="stat-icon-wrap purple">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="admin-stat-card">
+                <div>
+                    <div class="stat-label">Doanh thu thực tế</div>
+                    <div class="stat-value text-success" style="font-size: 1.45rem;">@Model.TotalRevenue.ToString("N0") ₫</div>
+                    <div class="stat-subtext">Đơn hàng hoàn tất</div>
+                </div>
+                <div class="stat-icon-wrap green">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= 2. SEARCH & STATUS FILTER BAR ================= -->
+    <div class="admin-card mb-3">
+        <div class="admin-card-body p-3">
+            <form method="get" id="orderSearchForm" class="row g-2 align-items-center">
+                <input type="hidden" name="StatusFilter" value="@Model.StatusFilter" />
+                <div class="col-md-9 col-lg-10">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0 text-muted">
+                            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+                        </span>
+                        <input type="text" id="orderSearchInput" name="SearchKeyword" value="@Model.SearchKeyword" 
+                               class="form-control form-control-admin border-start-0 ps-0" 
+                               placeholder="Tìm theo mã đơn (ví dụ: #ES0000001 hoặc 1), tên khách hàng, số điện thoại, địa chỉ giao hàng..."
+                               oninput="toggleClearSearchBtn(this.value)" />
+                    </div>
+                </div>
+                <div class="col-md-3 col-lg-2 d-flex gap-2">
+                    <button type="button" id="btnClearOrderSearch" class="btn btn-outline-secondary rounded-3 w-100 py-2 fw-semibold"
+                            onclick="clearOrderSearch()" @(string.IsNullOrWhiteSpace(Model.SearchKeyword) ? "disabled" : "")>
+                        Xóa tìm kiếm
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Status Chips -->
+    <div class="d-flex flex-wrap gap-2 mb-4">
+        <a asp-page="/Admin/Orders" asp-route-SearchKeyword="@Model.SearchKeyword" class="admin-chip-btn @(string.IsNullOrEmpty(Model.StatusFilter) ? "active" : "")">
+            Tất cả đơn
+        </a>
+        <a asp-page="/Admin/Orders" asp-route-StatusFilter="Pending" asp-route-SearchKeyword="@Model.SearchKeyword" class="admin-chip-btn @(Model.StatusFilter == "Pending" ? "active" : "")">
+            <span class="status-dot" style="background:#f59e0b;"></span>
+            <span>Chờ duyệt</span>
+        </a>
+        <a asp-page="/Admin/Orders" asp-route-StatusFilter="Confirmed" asp-route-SearchKeyword="@Model.SearchKeyword" class="admin-chip-btn @(Model.StatusFilter == "Confirmed" ? "active" : "")">
+            <span class="status-dot" style="background:#3b82f6;"></span>
+            <span>Đã duyệt</span>
+        </a>
+        <a asp-page="/Admin/Orders" asp-route-StatusFilter="Shipping" asp-route-SearchKeyword="@Model.SearchKeyword" class="admin-chip-btn @(Model.StatusFilter == "Shipping" ? "active" : "")">
+            <span class="status-dot" style="background:#6366f1;"></span>
+            <span>Đang giao</span>
+        </a>
+        <a asp-page="/Admin/Orders" asp-route-StatusFilter="Completed" asp-route-SearchKeyword="@Model.SearchKeyword" class="admin-chip-btn @(Model.StatusFilter == "Completed" ? "active" : "")">
+            <span class="status-dot" style="background:#10b981;"></span>
+            <span>Hoàn thành</span>
+        </a>
+        <a asp-page="/Admin/Orders" asp-route-StatusFilter="Cancelled" asp-route-SearchKeyword="@Model.SearchKeyword" class="admin-chip-btn @(Model.StatusFilter == "Cancelled" ? "active" : "")">
+            <span class="status-dot" style="background:#ef4444;"></span>
+            <span>Đã hủy</span>
+        </a>
+    </div>
+
+    <!-- ================= 3. ORDERS TABLE ================= -->
+    <div class="admin-card mb-4">
+        <div class="table-responsive">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th class="ps-4">Mã Đơn</th>
+                        <th>Khách Hàng</th>
+                        <th>Liên Hệ & Địa Chỉ</th>
+                        <th>Thời Gian Đặt</th>
+                        <th>Tổng Thanh Toán</th>
+                        <th>Trạng Thái</th>
+                        <th class="pe-4 text-end">Xử Lý Đơn</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Orders.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center py-5 text-secondary">
+                                <div class="py-3">
+                                    <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="text-muted mb-2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                                    </svg>
+                                    <div class="fw-semibold">Không có đơn hàng nào trong danh mục này!</div>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    @foreach (var o in Model.Orders)
+                    {
+                        <tr>
+                            <td class="ps-4">
+                                <span class="fw-bold text-primary font-monospace">#ES@(o.Id.ToString("D7"))</span>
+                                @{
+                                    var orderJson = System.Text.Json.JsonSerializer.Serialize(new {
+                                        id = o.Id,
+                                        code = $"#ES{o.Id:D7}",
+                                        receiverName = o.ReceiverName ?? o.User?.FullName ?? "Khách vãng lai",
+                                        receiverPhone = o.ReceiverPhone ?? o.User?.PhoneNumber ?? "—",
+                                        shippingAddress = o.ShippingAddress ?? "—",
+                                        notes = o.Notes ?? "Không có ghi chú",
+                                        paymentMethod = o.PaymentMethod,
+                                        orderDate = o.OrderDate.ToString("dd/MM/yyyy • HH:mm"),
+                                        totalAmount = $"{o.TotalAmount:N0} ₫",
+                                        items = o.OrderDetails.Select(d => new {
+                                            name = d.Product?.Name ?? "Thiết bị",
+                                            brand = d.Product?.Brand ?? "",
+                                            image = string.IsNullOrEmpty(d.Product?.ImageUrl) ? "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9" : d.Product.ImageUrl,
+                                            quantity = d.Quantity,
+                                            unitPrice = $"{d.UnitPrice:N0}",
+                                            totalPrice = $"{(d.Quantity * d.UnitPrice):N0}"
+                                        })
+                                    });
+                                }
+                                <script type="application/json" id="order-data-@o.Id">@Html.Raw(orderJson)</script>
+                            </td>
+                            <td>
+                                <div class="text-dark fw-bold">@(o.ReceiverName ?? o.User?.FullName ?? "Khách vãng lai")</div>
+                                <div class="text-secondary small">@(o.User?.Email ?? o.User?.UserName ?? "Khách mua nhanh")</div>
+                            </td>
+                            <td>
+                                <div class="text-dark small fw-semibold">@(o.ReceiverPhone ?? o.User?.PhoneNumber ?? "—")</div>
+                                <div class="text-secondary small text-truncate" style="max-width: 240px;" title="@o.ShippingAddress">@o.ShippingAddress</div>
+                            </td>
+                            <td>
+                                <span class="small text-secondary">@o.OrderDate.ToString("dd/MM/yyyy • HH:mm")</span>
+                            </td>
+                            <td>
+                                <span class="fw-bold text-dark">@o.TotalAmount.ToString("N0") ₫</span>
+                            </td>
+                            <td>
+                                @{
+                                    var normStatus = ElectronicStore_razor.Pages.Admin.OrdersModel.NormalizeStatus(o.OrderStatus);
+                                    var (bClass, bText) = normStatus switch
+                                    {
+                                        "Pending" => ("pending", "Chờ duyệt"),
+                                        "Confirmed" => ("confirmed", "Đã duyệt"),
+                                        "Shipping" => ("shipping", "Đang giao"),
+                                        "Completed" => ("completed", "Hoàn thành"),
+                                        "Cancelled" => ("cancelled", "Đã hủy"),
+                                        _ => ("pending", o.OrderStatus)
+                                    };
+                                }
+                                <span class="badge-pill-status @bClass">
+                                    <span class="status-dot"></span>
+                                    <span>@bText</span>
+                                </span>
+                            </td>
+                            <td class="pe-4 text-end">
+                                <div class="d-inline-flex gap-1 align-items-center">
+                                    <!-- Xem chi tiết đơn -->
+                                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-3 px-2.5 py-1 small fw-semibold"
+                                            onclick="openOrderDetailModal(@o.Id)">
+                                        Chi tiết
+                                    </button>
+
+                                    <!-- Nút chuyển trạng thái nhanh -->
+                                    @if (normStatus == "Pending")
+                                    {
+                                        <form method="post" asp-page-handler="UpdateStatus" class="d-inline">
+                                            <input type="hidden" name="orderId" value="@o.Id" />
+                                            <input type="hidden" name="newStatus" value="Confirmed" />
+                                            <input type="hidden" name="StatusFilter" value="@Model.StatusFilter" />
+                                            <input type="hidden" name="SearchKeyword" value="@Model.SearchKeyword" />
+                                            <button type="submit" class="btn btn-sm btn-primary rounded-3 px-2.5 py-1 small fw-semibold" title="Duyệt đơn hàng này">
+                                                Duyệt đơn
+                                            </button>
+                                        </form>
+                                        <form method="post" asp-page-handler="UpdateStatus" class="d-inline">
+                                            <input type="hidden" name="orderId" value="@o.Id" />
+                                            <input type="hidden" name="newStatus" value="Cancelled" />
+                                            <input type="hidden" name="StatusFilter" value="@Model.StatusFilter" />
+                                            <input type="hidden" name="SearchKeyword" value="@Model.SearchKeyword" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger rounded-3 px-2.5 py-1 small fw-semibold" onclick="return confirm('Bạn có chắc chắn muốn hủy đơn hàng này? Số lượng tồn kho sẽ được tự động hoàn lại.');">
+                                                Hủy
+                                            </button>
+                                        </form>
+                                    }
+                                    else if (normStatus == "Confirmed")
+                                    {
+                                        <form method="post" asp-page-handler="UpdateStatus" class="d-inline">
+                                            <input type="hidden" name="orderId" value="@o.Id" />
+                                            <input type="hidden" name="newStatus" value="Shipping" />
+                                            <input type="hidden" name="StatusFilter" value="@Model.StatusFilter" />
+                                            <input type="hidden" name="SearchKeyword" value="@Model.SearchKeyword" />
+                                            <button type="submit" class="btn btn-sm btn-info text-white rounded-3 px-2.5 py-1 small fw-semibold">
+                                                Giao hàng
+                                            </button>
+                                        </form>
+                                        <form method="post" asp-page-handler="UpdateStatus" class="d-inline">
+                                            <input type="hidden" name="orderId" value="@o.Id" />
+                                            <input type="hidden" name="newStatus" value="Cancelled" />
+                                            <input type="hidden" name="StatusFilter" value="@Model.StatusFilter" />
+                                            <input type="hidden" name="SearchKeyword" value="@Model.SearchKeyword" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger rounded-3 px-2.5 py-1 small fw-semibold" onclick="return confirm('Bạn có chắc chắn muốn hủy đơn hàng này? Số lượng tồn kho sẽ được tự động hoàn lại.');">
+                                                Hủy
+                                            </button>
+                                        </form>
+                                    }
+                                    else if (normStatus == "Shipping")
+                                    {
+                                        <form method="post" asp-page-handler="UpdateStatus" class="d-inline">
+                                            <input type="hidden" name="orderId" value="@o.Id" />
+                                            <input type="hidden" name="newStatus" value="Completed" />
+                                            <input type="hidden" name="StatusFilter" value="@Model.StatusFilter" />
+                                            <input type="hidden" name="SearchKeyword" value="@Model.SearchKeyword" />
+                                            <button type="submit" class="btn btn-sm btn-success rounded-3 px-2.5 py-1 small fw-semibold">
+                                                Hoàn tất
+                                            </button>
+                                        </form>
+                                        <form method="post" asp-page-handler="UpdateStatus" class="d-inline">
+                                            <input type="hidden" name="orderId" value="@o.Id" />
+                                            <input type="hidden" name="newStatus" value="Cancelled" />
+                                            <input type="hidden" name="StatusFilter" value="@Model.StatusFilter" />
+                                            <input type="hidden" name="SearchKeyword" value="@Model.SearchKeyword" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger rounded-3 px-2.5 py-1 small fw-semibold" onclick="return confirm('Xác nhận giao hàng thất bại / khách bom hàng? Đơn sẽ bị hủy và tồn kho được tự động hoàn lại.');">
+                                                Hủy / Bom
+                                            </button>
+                                        </form>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ================= 1 MODAL DUY NHẤT XEM CHI TIẾT ĐƠN HÀNG (Chuẩn Bootstrap 5 & Blazor Parity) ================= -->
+<div class="modal fade" id="orderDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
+            <div class="modal-header border-bottom py-3 px-4 bg-light">
+                <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="text-primary"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                    <span>Chi Tiết Đơn Hàng <span id="modalOrderCode" class="font-monospace text-primary">#ES0000000</span></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <!-- Khối tóm tắt thông tin người nhận -->
+                <div class="bg-light p-3 rounded-3 mb-4 border">
+                    <div class="row g-2 small">
+                        <div class="col-md-6"><strong>Người nhận:</strong> <span id="modalReceiverName">—</span></div>
+                        <div class="col-md-6"><strong>Số điện thoại:</strong> <span id="modalReceiverPhone">—</span></div>
+                        <div class="col-md-6"><strong>Thanh toán:</strong> <span id="modalPaymentMethod">—</span></div>
+                        <div class="col-md-6"><strong>Ngày đặt:</strong> <span id="modalOrderDate">—</span></div>
+                        <div class="col-12"><strong>Địa chỉ giao:</strong> <span id="modalShippingAddress">—</span></div>
+                        <div class="col-12 mt-2 pt-2 border-top"><strong>Ghi chú nhận hàng:</strong> <span id="modalOrderNotes" class="text-primary fw-medium">—</span></div>
+                    </div>
+                </div>
+
+                <!-- Bảng sản phẩm trong đơn -->
+                <h6 class="fw-bold text-dark border-bottom pb-2 mb-3">Danh Sách Thiết Bị Đặt Mua</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead class="table-light small text-secondary">
+                            <tr>
+                                <th>Thiết Bị</th>
+                                <th class="text-center">Số Lượng</th>
+                                <th class="text-end">Đơn Giá</th>
+                                <th class="text-end">Thành Tiền</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modalOrderItemsBody">
+                            <!-- JS tự động điền các dòng sản phẩm -->
+                        </tbody>
+                        <tfoot>
+                            <tr class="border-top">
+                                <td colspan="3" class="text-end fw-bold pt-3">Tổng giá trị đơn:</td>
+                                <td class="text-end fw-bold text-primary pt-3 fs-6" id="modalTotalAmount">0 ₫</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer border-top py-2.5 px-4 bg-light d-flex justify-content-between">
+                <button type="button" class="btn btn-outline-primary rounded-3 px-3 d-flex align-items-center gap-1.5 fw-semibold" onclick="window.print()">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                    <span>In Phiếu Giao Hàng</span>
+                </button>
+                <button type="button" class="btn btn-outline-secondary rounded-3 px-4" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    // Xử lý mở modal chi tiết đơn hàng
+    function openOrderDetailModal(orderId) {
+        const scriptEl = document.getElementById('order-data-' + orderId);
+        if (!scriptEl) return;
+        try {
+            const data = JSON.parse(scriptEl.textContent);
+            document.getElementById('modalOrderCode').textContent = data.code;
+            document.getElementById('modalReceiverName').textContent = data.receiverName;
+            document.getElementById('modalReceiverPhone').textContent = data.receiverPhone;
+            document.getElementById('modalPaymentMethod').textContent = data.paymentMethod;
+            document.getElementById('modalOrderDate').textContent = data.orderDate;
+            document.getElementById('modalShippingAddress').textContent = data.shippingAddress;
+            document.getElementById('modalOrderNotes').textContent = data.notes || 'Không có ghi chú';
+            document.getElementById('modalTotalAmount').textContent = data.totalAmount;
+
+            let rowsHtml = '';
+            data.items.forEach(d => {
+                rowsHtml += `
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <img src="${d.image}" alt="${d.name}" style="width: 38px; height: 38px; object-fit: cover; border-radius: 8px; border: 1px solid #e2e8f0;" />
+                                <div>
+                                    <div class="text-dark fw-bold small">${d.name}</div>
+                                    <div class="text-secondary" style="font-size:0.75rem;">${d.brand}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-center fw-bold">${d.quantity}</td>
+                        <td class="text-end small">${d.unitPrice} ₫</td>
+                        <td class="text-end fw-bold text-dark">${d.totalPrice} ₫</td>
+                    </tr>
+                `;
+            });
+            document.getElementById('modalOrderItemsBody').innerHTML = rowsHtml;
+
+            const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('orderDetailModal'));
+            modal.show();
+        } catch (e) {
+            console.error('Lỗi phân tích dữ liệu đơn hàng:', e);
+        }
+    }
+
+    // Xử lý nút Xóa tìm kiếm
+    function toggleClearSearchBtn(val) {
+        const btn = document.getElementById('btnClearOrderSearch');
+        if (btn) btn.disabled = (!val || val.trim().length === 0);
+    }
+
+    function clearOrderSearch() {
+        const input = document.getElementById('orderSearchInput');
+        if (input) input.value = '';
+        const form = document.getElementById('orderSearchForm');
+        if (form) form.submit();
+    }
+</script>
+}

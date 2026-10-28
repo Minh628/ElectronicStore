@@ -1,0 +1,18 @@
+@model ElectronicStore_mvc.Models.Entities.Product
+@{
+    ViewData["Title"] = Model?.Name ?? "Chi tiết sản phẩm";
+    Layout = "_Layout";
+}
+
+<!-- Chuyển hướng an toàn sang view chuẩn ProductDetail (/product/@Model?.Id) -->
+<script>
+    window.location.replace('/product/@(Model?.Id ?? 1)');
+</script>
+
+<div class="container py-5 text-center">
+    <div class="spinner-border text-primary mb-3" role="status"></div>
+    <p class="text-secondary small">Đang chuyển tiếp đến trang chi tiết sản phẩm...</p>
+    <a asp-action="ProductDetail" asp-route-id="@Model?.Id" class="btn btn-outline-primary btn-sm rounded-pill px-4">
+        Bấm vào đây nếu không tự động chuyển trang
+    </a>
+</div>

@@ -1,0 +1,317 @@
+@model ElectronicStore_mvc.Models.Entities.Product
+@{
+    ViewData["Title"] = Model?.Name ?? "Chi tiết sản phẩm";
+    var p = Model;
+    var relatedProducts = ViewBag.RelatedProducts as List<ElectronicStore_mvc.Models.Entities.Product> ?? new();
+}
+
+<div class="container py-3">
+    <!-- Breadcrumb -->
+    <nav class="mb-4" style="--bs-breadcrumb-divider: '›';">
+        <ol class="breadcrumb small mb-0">
+            <li class="breadcrumb-item"><a asp-action="Index" class="text-secondary text-decoration-none">Trang chủ</a></li>
+            <li class="breadcrumb-item"><a asp-action="Index" asp-route-CategoryId="@p?.CategoryId" class="text-secondary text-decoration-none">@(p?.Category?.Name ?? "Danh mục")</a></li>
+            <li class="breadcrumb-item"><a asp-action="Index" asp-route-Brand="@p?.Brand" class="text-secondary text-decoration-none">@p?.Brand</a></li>
+            <li class="breadcrumb-item active text-dark fw-semibold" aria-current="page">@(p?.Name ?? "")</li>
+        </ol>
+    </nav>
+
+    @if (p != null)
+    {
+        var discountPrice = p.Price * 1.15m;
+        <div class="row g-5 mb-5">
+            <!-- Cột trái: Thư viện ảnh sản phẩm -->
+            <div class="col-lg-6">
+                <div class="detail-gallery-main mb-3 position-relative">
+                    <span class="badge bg-primary bg-opacity-10 text-primary fw-bold px-3 py-2 rounded-pill small position-absolute" style="top:18px; left:18px;">
+                        @p.Brand • Chính hãng
+                    </span>
+                    <img id="detail-main-img" src="@(string.IsNullOrEmpty(p.ImageUrl) ? "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9" : p.ImageUrl)" 
+                         alt="@p.Name" class="img-fluid" />
+                </div>
+                <!-- Thumbnails -->
+                <div class="d-flex align-items-center justify-content-center gap-2">
+                    <div class="detail-thumb active" onclick="changeDetailImage('@p.ImageUrl', false, this)">
+                        <img src="@p.ImageUrl" alt="Thumbnail 1" />
+                    </div>
+                    @if (!string.IsNullOrEmpty(p.ImageUrl))
+                    {
+                        <div class="detail-thumb" onclick="changeDetailImage('@p.ImageUrl', true, this)">
+                            <img src="@p.ImageUrl" alt="Thumbnail 2" style="transform: scaleX(-1);" />
+                        </div>
+                    }
+                </div>
+                <div class="text-center text-secondary small mt-2">
+                    Hình ảnh sản phẩm • @p.Brand chính hãng
+                </div>
+            </div>
+
+            <!-- Cột phải: Thông tin, Giá & Mua hàng -->
+            <div class="col-lg-6">
+                <!-- Badges -->
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="text-primary fw-bold text-uppercase small" style="letter-spacing:0.05em;">@p.Brand</span>
+                    <span class="badge bg-success bg-opacity-10 text-success fw-semibold px-2 py-1 rounded-pill small">
+                        Bảo hành chính hãng @p.WarrantyMonths tháng
+                    </span>
+                </div>
+
+                <!-- Title -->
+                <h1 class="text-dark fw-bold mb-2" style="font-size: 2.2rem; letter-spacing: -0.02em;">
+                    @p.Name
+                </h1>
+
+                <!-- Specs sub-line & Code -->
+                <div class="text-secondary small mb-2">
+                    @p.Specifications • Mã SP: ES-@p.Id.ToString("D5")
+                </div>
+
+                <!-- Rating -->
+                <div class="d-flex align-items-center gap-2 mb-3 small">
+                    <span class="text-warning">★★★★★</span>
+                    <span class="fw-bold text-dark">4.9 / 5</span>
+                    <span class="text-secondary">• 128 đánh giá</span>
+                </div>
+
+                <!-- Price Box -->
+                <div class="d-flex align-items-baseline gap-3 mb-1">
+                    <span class="fw-extrabold text-primary" style="font-size: 2.2rem;">
+                        @p.Price.ToString("N0") đ
+                    </span>
+                    <span class="text-secondary text-decoration-line-through small">
+                        @discountPrice.ToString("N0") đ
+                    </span>
+                    <span class="badge bg-primary bg-opacity-10 text-primary fw-bold small px-2 py-1">
+                        -14%
+                    </span>
+                </div>
+                <div class="text-secondary small mb-4">
+                    Giá đã bao gồm VAT • Miễn phí giao hàng toàn quốc
+                </div>
+
+                <!-- Phiên bản thiết bị -->
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-secondary mb-2">Phiên bản thiết bị</label>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-primary btn-sm px-3 py-2 fw-semibold active rounded-3">
+                            Bản tiêu chuẩn
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Form Thêm vào giỏ & Mua ngay -->
+                <div class="mb-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="input-group" style="width: 130px;">
+                            <button class="btn btn-outline-secondary" type="button" onclick="stepDetailQty(-1)">-</button>
+                            <input type="number" id="detail-qty-input" name="quantity" class="form-control text-center fw-bold bg-white" value="1" min="1" max="@p.Quantity" readonly />
+                            <button class="btn btn-outline-secondary" type="button" onclick="stepDetailQty(1)">+</button>
+                        </div>
+                        <div class="small fw-semibold @(p.Quantity > 0 ? "text-success" : "text-danger")">
+                            @(p.Quantity > 0 ? $"● Còn {p.Quantity} sản phẩm" : "● Hết hàng")
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-3 mb-4">
+                    <button type="button" class="btn btn-outline-secondary flex-grow-1 py-3 fw-bold rounded-3 d-flex align-items-center justify-content-center gap-2"
+                            onclick="handleDetailAddToCartAjax(@p.Id)" @(p.Quantity <= 0 ? "disabled" : "")>
+                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+                        </svg>
+                        <span>Thêm vào giỏ</span>
+                    </button>
+                    <button type="button" class="btn btn-primary flex-grow-1 py-3 fw-bold rounded-3 d-flex align-items-center justify-content-center gap-2"
+                            style="background:var(--accent-blue); border:none;" onclick="handleBuyNowAjax(@p.Id)" @(p.Quantity <= 0 ? "disabled" : "")>
+                        <span>Mua ngay</span>
+                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Perks Box -->
+                <div class="p-3 rounded-3 mb-3" style="background:#eff6ff; border:1px solid #dbeafe;">
+                    <div class="fw-bold text-primary small mb-1">Ưu đãi dành riêng cho bạn</div>
+                    <ul class="list-unstyled small text-secondary mb-0 d-flex flex-column gap-1">
+                        <li>• Tặng gói dán màn hình cao cấp & hỗ trợ chuyển dữ liệu miễn phí.</li>
+                        <li>• Giảm thêm 500.000đ khi thanh toán qua chuyển khoản VietQR.</li>
+                    </ul>
+                </div>
+
+                <div class="d-flex align-items-center gap-4 text-secondary small">
+                    <span>✓ Đổi mới 30 ngày nếu lỗi NSX</span>
+                    <span>✓ Giao hàng hỏa tốc 2-4 ngày</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= BOTTOM SPLIT: HIGHLIGHTS & SPECS TABLE ================= -->
+        <div id="specs" class="row g-4 mb-5 pt-3">
+            <div class="col-lg-6">
+                <div class="p-4 p-md-5 rounded-4 h-100 text-white d-flex flex-column justify-content-between" 
+                     style="background: radial-gradient(circle at 90% 10%, rgba(37,99,235,0.2) 0%, transparent 60%), linear-gradient(135deg, #0b1120 0%, #020617 100%); border:1px solid rgba(255,255,255,0.08);">
+                    <div>
+                        <span class="text-uppercase small fw-bold text-secondary mb-3 d-inline-block" style="letter-spacing:0.06em;">
+                            Được tạo nên để khác biệt
+                        </span>
+                        <h3 class="fw-bold mb-3" style="font-size:2rem; line-height: 1.2;">
+                            @p.Name<br/>
+                            Hiệu năng bứt phá.
+                        </h3>
+                        <p class="text-secondary mb-4" style="line-height:1.7;">
+                            @(string.IsNullOrEmpty(p.Description) ? "Trải nghiệm đỉnh cao công nghệ thế hệ mới với độ bền vượt trội, camera đột phá và thời lượng pin ấn tượng." : p.Description)
+                        </p>
+                    </div>
+
+                    <div class="row g-3 pt-3 border-top border-secondary border-opacity-25">
+                        <div class="col-4">
+                            <div class="fw-bold fs-4 text-white">Chính hãng</div>
+                            <div class="text-secondary small">100% nguồn gốc</div>
+                        </div>
+                        <div class="col-4">
+                            <div class="fw-bold fs-4 text-white">@p.WarrantyMonths Tháng</div>
+                            <div class="text-secondary small">Bảo hành vàng</div>
+                        </div>
+                        <div class="col-4">
+                            <div class="fw-bold fs-4 text-white">Miễn phí</div>
+                            <div class="text-secondary small">Vận chuyển toàn quốc</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="bg-white p-4 p-md-5 rounded-4 border h-100">
+                    <h4 class="fw-bold text-dark mb-4">Thông số kỹ thuật</h4>
+                    <table class="detail-specs-table">
+                        <tbody>
+                            <tr>
+                                <td>Hãng sản xuất</td>
+                                <td>@p.Brand</td>
+                            </tr>
+                            <tr>
+                                <td>Danh mục</td>
+                                <td>@(p.Category?.Name ?? "Thiết bị điện tử")</td>
+                            </tr>
+                            <tr>
+                                <td>Cấu hình chi tiết</td>
+                                <td>@(string.IsNullOrEmpty(p.Specifications) ? "Đang cập nhật" : p.Specifications)</td>
+                            </tr>
+                            <tr>
+                                <td>Thời gian bảo hành</td>
+                                <td>@p.WarrantyMonths tháng chính hãng</td>
+                            </tr>
+                            <tr>
+                                <td>Tình trạng kho</td>
+                                <td>@(p.Quantity > 0 ? $"Còn hàng ({p.Quantity} máy)" : "Tạm hết hàng")</td>
+                            </tr>
+                            <tr>
+                                <td>Chính sách đổi trả</td>
+                                <td>1 đổi 1 trong 30 ngày nếu lỗi từ NSX</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+
+    }
+    else
+    {
+        <div class="text-center py-5">
+            <h4 class="fw-bold text-dark">Không tìm thấy sản phẩm!</h4>
+            <a asp-action="Index" class="btn btn-primary rounded-pill px-4 mt-2">Quay lại trang chủ</a>
+        </div>
+    }
+</div>
+
+<!-- Toast notification container -->
+<div id="toast-container"></div>
+
+@section Scripts {
+    <script>
+        // Đổi ảnh thumbnail kèm lật ảnh nếu click ảnh phụ và toggle class active
+        function changeDetailImage(url, isFlipped, el) {
+            const mainImg = document.getElementById('detail-main-img');
+            if (mainImg && url) {
+                mainImg.src = url;
+                mainImg.style.transform = isFlipped ? 'scaleX(-1)' : 'none';
+            }
+            document.querySelectorAll('.detail-thumb').forEach(t => t.classList.remove('active'));
+            if (el) {
+                el.classList.add('active');
+            }
+        }
+
+        function stepDetailQty(delta) {
+            const input = document.getElementById('detail-qty-input');
+            let val = parseInt(input.value) || 1;
+            const max = parseInt(input.max) || 99;
+            val += delta;
+            if (val < 1) val = 1;
+            if (val > max) val = max;
+            input.value = val;
+        }
+
+        function handleDetailAddToCartAjax(productId) {
+            const qty = parseInt(document.getElementById('detail-qty-input').value) || 1;
+            const formData = new FormData();
+            formData.append('productId', productId);
+            formData.append('quantity', qty);
+
+            fetch('/Cart/AddToCart', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    const badge = document.querySelector('.nav-cart-badge');
+                    if (badge) {
+                        badge.textContent = data.cartCount;
+                    }
+                    showToast(data.message);
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(err => console.error(err));
+        }
+
+        // Mua ngay: Thêm vào giỏ hàng và điều hướng trực tiếp đến trang Checkout (/checkout)
+        function handleBuyNowAjax(productId) {
+            const qty = parseInt(document.getElementById('detail-qty-input').value) || 1;
+            const formData = new FormData();
+            formData.append('productId', productId);
+            formData.append('quantity', qty);
+
+            fetch('/Cart/AddToCart', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = '/checkout';
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(err => console.error(err));
+        }
+
+        function showToast(msg) {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            const toast = document.createElement('div');
+            toast.className = 'electro-toast';
+            toast.innerHTML = `<svg width="20" height="20" fill="none" stroke="#22c55e" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>${msg}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+    </script>
+}

@@ -1,0 +1,158 @@
+@inject Microsoft.AspNetCore.Identity.UserManager<ElectronicStore_razor.Models.Entities.ApplicationUser> UserManager
+@{
+    var currentUser = await UserManager.GetUserAsync(User);
+    var fullName = currentUser?.FullName;
+    if (string.IsNullOrWhiteSpace(fullName) || fullName.Contains("Quá") || fullName.Contains("Ã") || fullName.Contains("»") || fullName.Contains("Ä"))
+    {
+        fullName = "Quản Trị Viên Hệ Thống";
+    }
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - ElectroStore Quản Trị Hệ Thống</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin.css" asp-append-version="true" />
+</head>
+<body class="admin-body">
+    <div class="admin-layout-wrapper">
+        <!-- ================= SIDEBAR CỐ ĐỊNH ================= -->
+        <aside class="admin-sidebar" id="adminSidebar">
+            <!-- Brand Logo -->
+            <a class="admin-sidebar-brand" asp-page="/Admin/Products">
+                <div class="d-flex align-items-center justify-content-center rounded-3 text-white shadow-sm"
+                     style="width: 38px; height: 38px; background: linear-gradient(135deg, #2563eb, #3b82f6);">
+                    <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                </div>
+                <div>
+                    <div class="text-white fw-bold d-flex align-items-center gap-2" style="font-size: 1.05rem; letter-spacing: -0.02em;">
+                        <span>Electro<span style="color:#60a5fa;">Admin</span></span>
+                    </div>
+                    <div class="badge bg-warning text-dark px-1.5 py-0.5 fw-bold" style="font-size: 0.65rem; letter-spacing: 0.05em;">PORTAL PRO</div>
+                </div>
+            </a>
+
+            <!-- Sidebar Navigation Menu -->
+            <nav class="admin-sidebar-nav">
+                <div class="admin-nav-heading">Quản Lý Bán Hàng</div>
+                <a class="admin-nav-item @(ViewContext.RouteData.Values["page"]?.ToString()?.Contains("Products") == true ? "active" : "")" asp-page="/Admin/Products">
+                    <div class="d-flex align-items-center">
+                        <svg class="admin-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                        </svg>
+                        <span>Sản Phẩm</span>
+                    </div>
+                </a>
+
+                <a class="admin-nav-item @(ViewContext.RouteData.Values["page"]?.ToString()?.Contains("Categories") == true ? "active" : "")" asp-page="/Admin/Categories">
+                    <div class="d-flex align-items-center">
+                        <svg class="admin-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                        </svg>
+                        <span>Danh Mục</span>
+                    </div>
+                </a>
+
+                <a class="admin-nav-item @(ViewContext.RouteData.Values["page"]?.ToString()?.Contains("Orders") == true ? "active" : "")" asp-page="/Admin/Orders">
+                    <div class="d-flex align-items-center">
+                        <svg class="admin-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                        </svg>
+                        <span>Duyệt Đơn Hàng</span>
+                    </div>
+                </a>
+
+                <div class="admin-nav-heading mt-3">Hệ Thống</div>
+                <a class="admin-nav-item @(ViewContext.RouteData.Values["page"]?.ToString()?.Contains("Accounts") == true ? "active" : "")" asp-page="/Admin/Accounts">
+                    <div class="d-flex align-items-center">
+                        <svg class="admin-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                        <span>Quản Lý Tài Khoản</span>
+                    </div>
+                </a>
+            </nav>
+
+            <!-- Sidebar Footer -->
+            <div class="admin-sidebar-footer">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
+                         style="width: 36px; height: 36px; background: #3b82f6; font-size: 0.9rem;">
+                        @(User.Identity?.Name?.Substring(0, 1).ToUpper() ?? "A")
+                    </div>
+                    <div class="overflow-hidden">
+                        <div class="text-white small fw-bold text-truncate">@fullName</div>
+                        <div class="text-secondary" style="font-size: 0.72rem;">Quản Trị Viên</div>
+                    </div>
+                </div>
+                <div class="d-flex gap-2">
+                    <a asp-page="/Index" target="_blank" class="btn btn-outline-light btn-sm w-50 py-1.5 small rounded-3 d-flex align-items-center justify-content-center gap-1">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                        <span>Cửa hàng</span>
+                    </a>
+                    <a asp-page="/Admin/Login" asp-page-handler="Logout" class="btn btn-danger btn-sm w-50 py-1.5 small rounded-3 d-flex align-items-center justify-content-center gap-1 border-0">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                        <span>Thoát</span>
+                    </a>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ================= MAIN CANVAS ================= -->
+        <div class="admin-main-canvas">
+            <!-- Topbar -->
+            <header class="admin-topbar">
+                <div class="d-flex align-items-center gap-3">
+                    <button class="btn btn-sm btn-light d-lg-none border p-2" type="button" onclick="toggleSidebar()">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                    </button>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge-pill-status completed">
+                            <span class="status-dot"></span>
+                            <span>Hệ thống trực tuyến</span>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center gap-3">
+                    <a asp-page="/Index" target="_blank" class="btn btn-sm btn-outline-secondary rounded-pill px-3 d-flex align-items-center gap-1.5">
+                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                        <span class="small fw-semibold">Xem trang khách hàng</span>
+                    </a>
+                </div>
+            </header>
+
+            <!-- Main Content Area -->
+            <main role="main" class="admin-content-body">
+                @RenderBody()
+            </main>
+
+            <!-- Admin Footer -->
+            <footer class="py-3 px-4 text-secondary small border-top bg-white mt-auto d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div>&copy; @DateTime.Now.Year ElectroStore Admin Portal • Bảo mật cấp doanh nghiệp</div>
+                <div>Phiên bản 2.5 • ASP.NET Core Razor Pages</div>
+            </footer>
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script>
+        function toggleSidebar() {
+            var sb = document.getElementById('adminSidebar');
+            if (sb) sb.classList.toggle('show');
+        }
+    </script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,15 @@
+@page
+@{
+    ViewData["Title"] = "Từ Chối Truy Cập";
+}
+
+<div class="container py-5 text-center">
+    <div class="auth-wrapper py-5">
+        <div class="text-danger mb-3">
+            <svg width="64" height="64" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+        </div>
+        <h3 class="text-white fw-bold mb-2">Quyền Truy Cập Bị Từ Chối!</h3>
+        <p class="text-secondary mb-4">Bạn không có quyền quản trị để truy cập vào khu vực này.</p>
+        <a asp-page="/Index" class="btn btn-outline-light rounded-pill px-4">Về Trang Chủ</a>
+    </div>
+</div>

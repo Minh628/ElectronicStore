@@ -1,0 +1,220 @@
+@page
+@model ElectronicStore_razor.Pages.Admin.CategoriesModel
+@{
+    ViewData["Title"] = "Admin - Quản Lý Danh Mục";
+}
+
+<div class="container-fluid p-0">
+    <!-- Tiêu Đề & Nút Thêm Mới -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <h3 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
+                <span>Quản Lý Danh Mục Ngành Hàng</span>
+                <span class="badge bg-primary rounded-pill fs-6 px-3">@Model.Categories.Count danh mục</span>
+            </h3>
+            <p class="text-secondary small mb-0">Phân loại các thiết bị theo ngành hàng như Điện thoại, Laptop, Máy tính bảng, Âm thanh...</p>
+        </div>
+        <div>
+            <button type="button" class="btn btn-primary rounded-3 px-4 py-2 fw-semibold d-inline-flex align-items-center gap-2 shadow-sm"
+                    onclick="openAddCategoryModal()">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                <span>Thêm Danh Mục Mới</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Alert Notification -->
+    @if (!string.IsNullOrEmpty(Model.AlertMessage))
+    {
+        <div class="alert alert-@(Model.AlertType ?? "success") alert-dismissible fade show rounded-3 mb-4 shadow-sm" role="alert">
+            <div class="d-flex align-items-center gap-2">
+                <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                </svg>
+                <div>@Model.AlertMessage</div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- ================= THANH TÌM KIẾM ================= -->
+    <div class="admin-card mb-4">
+        <div class="admin-card-body p-3">
+            <form method="get" id="categorySearchForm" class="row g-2 align-items-center">
+                <div class="col-md-9 col-lg-10">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0 text-muted">
+                            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+                        </span>
+                        <input type="text" id="categorySearchInput" name="SearchKeyword" value="@Model.SearchKeyword" 
+                               class="form-control form-control-admin border-start-0 ps-0" 
+                               placeholder="Tìm kiếm theo tên ngành hàng, mô tả danh mục..."
+                               oninput="toggleClearCategorySearch(this.value)" />
+                    </div>
+                </div>
+                <div class="col-md-3 col-lg-2 d-flex gap-2">
+                    <button type="button" id="btnClearCategorySearch" class="btn btn-outline-secondary rounded-3 w-100 py-2 fw-semibold"
+                            onclick="clearCategorySearch()" @(string.IsNullOrWhiteSpace(Model.SearchKeyword) ? "disabled" : "")>
+                        Xóa tìm kiếm
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================= BẢNG DANH MỤC FULL-WIDTH ================= -->
+    <div class="admin-card">
+        <div class="admin-card-header d-flex align-items-center justify-content-between">
+            <h6 class="fw-bold mb-0 text-dark">Danh Sách Ngành Hàng Đang Áp Dụng</h6>
+            <span class="text-secondary small">Hiển thị @Model.Categories.Count danh mục</span>
+        </div>
+        <div class="table-responsive">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th class="ps-4" style="width: 80px;">ID</th>
+                        <th style="width: 250px;">Tên Ngành Hàng</th>
+                        <th>Mô Tả</th>
+                        <th style="width: 150px;">Quy Mô</th>
+                        <th style="width: 130px;">Trạng Thái</th>
+                        <th class="pe-4 text-end" style="width: 120px;">Hành Động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Categories.Any())
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center py-5 text-secondary">
+                                <svg width="40" height="40" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="mb-2 text-muted">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                                </svg>
+                                <div>Không tìm thấy danh mục nào phù hợp với từ khóa!</div>
+                            </td>
+                        </tr>
+                    }
+                    @foreach (var c in Model.Categories)
+                    {
+                        <tr>
+                            <td class="ps-4 text-secondary small fw-bold">#@c.Id</td>
+                            <td>
+                                <div class="text-dark fw-bold">@c.Name</div>
+                            </td>
+                            <td>
+                                <div class="text-secondary small">@(string.IsNullOrEmpty(c.Description) ? "—" : c.Description)</div>
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark border fw-medium px-2.5 py-1.5">
+                                    @c.Products.Count sản phẩm
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 small fw-semibold">
+                                    Hoạt động
+                                </span>
+                            </td>
+                            <td class="pe-4 text-end">
+                                <div class="d-inline-flex gap-1">
+                                    <button type="button" class="admin-action-btn edit" title="Sửa danh mục"
+                                            onclick="openEditCategoryModal(@c.Id, '@Html.Raw(c.Name.Replace("'", "\\'"))', '@Html.Raw((c.Description ?? "").Replace("'", "\\'"))')">
+                                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                    </button>
+                                    <form method="post" asp-page-handler="Delete" asp-route-id="@c.Id" class="d-inline">
+                                        <button type="submit" class="admin-action-btn delete" title="Xóa danh mục"
+                                                onclick="return confirm('Bạn có chắc chắn muốn xóa danh mục này?');">
+                                            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ================= MODAL THÊM / SỬA DANH MỤC (GIỐNG THÊM SẢN PHẨM) ================= -->
+<div class="modal fade" id="categoryModal" tabindex="-1" aria-labelledby="categoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
+            <div class="modal-header bg-light border-bottom px-4 py-3">
+                <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2" id="categoryModalLabel">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="text-primary">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    <span id="catModalTitleText">Thêm Danh Mục Mới</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" asp-page-handler="Save">
+                <div class="modal-body p-4">
+                    <input type="hidden" id="modalCatId" name="InputCategory.Id" value="0" />
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Tên ngành hàng <span class="text-danger">*</span></label>
+                        <input type="text" id="modalCatName" name="InputCategory.Name" class="form-control form-control-admin" placeholder="Ví dụ: Điện thoại, Laptop, Phụ kiện..." required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Mô tả tóm tắt</label>
+                        <textarea id="modalCatDesc" name="InputCategory.Description" rows="4" class="form-control form-control-admin" placeholder="Mô tả ngành hàng thiết bị..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-top px-4 py-3 d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-outline-secondary rounded-3 px-4 py-2 fw-semibold" data-bs-dismiss="modal">Hủy bỏ</button>
+                    <button type="submit" class="btn btn-primary rounded-3 px-4 py-2 fw-semibold shadow-sm">
+                        <span id="modalCatSubmitBtnText">Lưu Danh Mục</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let categoryModalInstance = null;
+
+    document.addEventListener("DOMContentLoaded", function () {
+        var modalEl = document.getElementById('categoryModal');
+        if (modalEl) {
+            categoryModalInstance = new bootstrap.Modal(modalEl);
+        }
+    });
+
+    function openAddCategoryModal() {
+        document.getElementById('catModalTitleText').innerText = 'Thêm Danh Mục Mới';
+        document.getElementById('modalCatId').value = 0;
+        document.getElementById('modalCatName').value = '';
+        document.getElementById('modalCatDesc').value = '';
+        document.getElementById('modalCatSubmitBtnText').innerText = 'Lưu Danh Mục';
+        categoryModalInstance.show();
+    }
+
+    function openEditCategoryModal(id, name, desc) {
+        document.getElementById('catModalTitleText').innerText = 'Cập Nhật Danh Mục: ' + name;
+        document.getElementById('modalCatId').value = id;
+        document.getElementById('modalCatName').value = name;
+        document.getElementById('modalCatDesc').value = desc;
+        document.getElementById('modalCatSubmitBtnText').innerText = 'Cập Nhật';
+        categoryModalInstance.show();
+    }
+
+    function toggleClearCategorySearch(val) {
+        const btn = document.getElementById('btnClearCategorySearch');
+        if (btn) btn.disabled = (!val || val.trim().length === 0);
+    }
+
+    function clearCategorySearch() {
+        const input = document.getElementById('categorySearchInput');
+        if (input) input.value = '';
+        const form = document.getElementById('categorySearchForm');
+        if (form) form.submit();
+    }
+</script>
+}

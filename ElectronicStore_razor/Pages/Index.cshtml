@@ -1,0 +1,465 @@
+@page
+@model ElectronicStore_razor.Pages.IndexModel
+@{
+    ViewData["Title"] = "Trang Chủ";
+}
+
+<div class="container py-2">
+    <!-- ================= 1. HERO SHOWCASE TITANIUM ================= -->
+    <section class="hero-titanium">
+        <div class="row align-items-center">
+            <div class="col-lg-7 mb-4 mb-lg-0">
+                <div class="hero-titanium-badge">
+                    <span>THIẾT KẾ TITAN. SỨC MẠNH PRO.</span>
+                </div>
+                <h1 class="hero-titanium-title">
+                    Vượt giới hạn.<br/>
+                    Chạm tương lai.
+                </h1>
+                <p class="hero-titanium-sub">
+                    iPhone 15 Pro Max. Nhẹ hơn. Mạnh mẽ hơn. Khung viền Titan chuẩn hàng không vũ trụ.
+                </p>
+                <div class="hero-titanium-price">
+                    Chỉ từ <span>29.990.000 đ</span>
+                </div>
+                <div class="d-flex flex-wrap gap-3">
+                    <a asp-page="/ProductDetail" asp-route-id="1" class="btn-hero-primary">
+                        Khám phá ngay
+                    </a>
+                    <a asp-page="/ProductDetail" asp-route-id="1" class="btn-hero-outline">
+                        Xem thông số 
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-5 text-center">
+                <img src="https://images.unsplash.com/photo-1695048133142-1a20484d2569" 
+                     alt="iPhone 15 Pro Max" 
+                     class="hero-img-showcase rounded-4" 
+                     style="max-height: 380px; object-fit: cover; width: 100%; border: 1px solid rgba(255,255,255,0.1);" />
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= 2. TRUST BADGES STRIP ================= -->
+    <section class="trust-badges-strip">
+        <div class="trust-badge-item">
+            <div class="trust-badge-icon">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                </svg>
+            </div>
+            <div>
+                <div class="trust-badge-title">100% chính hãng</div>
+                <div class="trust-badge-desc">An tâm từ nguồn gốc</div>
+            </div>
+        </div>
+        <div class="trust-badge-item">
+            <div class="trust-badge-icon">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"/>
+                </svg>
+            </div>
+            <div>
+                <div class="trust-badge-title">Miễn phí giao hàng</div>
+                <div class="trust-badge-desc">Đến mọi tỉnh thành</div>
+            </div>
+        </div>
+        <div class="trust-badge-item">
+            <div class="trust-badge-icon">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                </svg>
+            </div>
+            <div>
+                <div class="trust-badge-title">Bảo hành chính hãng</div>
+                <div class="trust-badge-desc">Hỗ trợ tận tâm, dài lâu</div>
+            </div>
+        </div>
+        <div class="trust-badge-item">
+            <div class="trust-badge-icon">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+            </div>
+            <div>
+                <div class="trust-badge-title">Đổi mới trong 30 ngày</div>
+                <div class="trust-badge-desc">Nếu lỗi từ nhà sản xuất</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= 3. BRAND PILLS ================= -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-bold mb-0 text-dark">Thương hiệu bạn yêu thích</h5>
+        <span class="small text-secondary">Chọn chất lượng. Chọn chính hãng.</span>
+    </div>
+    <div class="brand-pills-row">
+        <a asp-page="/Index" asp-route-CategoryId="@Model.CategoryId" asp-route-SearchKeyword="@Model.SearchKeyword" asp-route-SortBy="@Model.SortBy"
+           class="brand-pill-btn @(string.IsNullOrEmpty(Model.Brand) ? "active" : "")">
+            Tất cả
+        </a>
+        @foreach (var b in Model.Brands)
+        {
+            <a asp-page="/Index" asp-route-CategoryId="@Model.CategoryId" asp-route-Brand="@b" asp-route-SearchKeyword="@Model.SearchKeyword" asp-route-SortBy="@Model.SortBy"
+               class="brand-pill-btn @(Model.Brand == b ? "active" : "")">
+                @b
+            </a>
+        }
+    </div>
+
+    <!-- ================= 4. CATALOG HEADER & FILTERS ================= -->
+    <div class="mt-4 mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <div>
+                <h3 class="fw-bold text-dark mb-1">Nâng cấp trải nghiệm của bạn</h3>
+                <p class="text-secondary small mb-0">Những lựa chọn nổi bật, dành cho mọi nhịp sống.</p>
+            </div>
+            <a asp-page="/Index" class="small fw-semibold text-primary text-decoration-none">
+                Xem tất cả &rarr;
+            </a>
+        </div>
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 pt-2">
+            <!-- Category Tabs -->
+            <div class="category-tabs-bar">
+                <a asp-page="/Index" asp-route-Brand="@Model.Brand" asp-route-SearchKeyword="@Model.SearchKeyword" asp-route-SortBy="@Model.SortBy"
+                   class="category-tab-btn @(!Model.CategoryId.HasValue ? "active" : "")">
+                    Tất cả
+                </a>
+                @foreach (var c in Model.Categories)
+                {
+                    <a asp-page="/Index" asp-route-CategoryId="@c.Id" asp-route-Brand="@Model.Brand" asp-route-SearchKeyword="@Model.SearchKeyword" asp-route-SortBy="@Model.SortBy"
+                       class="category-tab-btn @(Model.CategoryId == c.Id ? "active" : "")">
+                        @c.Name
+                    </a>
+                }
+            </div>
+
+            <!-- Count & Sort Dropdown khớp 100% Blazor -->
+            <div class="d-flex align-items-center gap-3 small text-secondary">
+                <span>Hiển thị @Model.Products.Count / @Model.TotalProducts sản phẩm</span>
+                <div class="d-flex align-items-center gap-1">
+                    <select class="form-select form-select-sm border-0 bg-light" id="catalog-sort-select" style="border-radius:8px;"
+                            onchange="applySortChange(this.value)">
+                        <!option value="featured" @(Model.SortBy == "featured" ? "selected" : "")>Sắp xếp: Nổi bật</!option>
+                        <!option value="price-asc" @(Model.SortBy == "price-asc" ? "selected" : "")>Giá: Thấp đến Cao</!option>
+                        <!option value="price-desc" @(Model.SortBy == "price-desc" ? "selected" : "")>Giá: Cao đến Thấp</!option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= 5. PRODUCT GRID (DEMO DESIGN) ================= -->
+    @if (Model.Products.Count == 0)
+    {
+        <div class="text-center py-5 my-5 bg-white rounded-4 border">
+            <div class="text-secondary mb-3">
+                <svg width="56" height="56" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <h5 class="fw-bold text-dark">Không tìm thấy sản phẩm phù hợp</h5>
+            <p class="text-secondary small">Vui lòng thử lại với danh mục hoặc từ khóa khác.</p>
+            <a asp-page="/Index" class="btn btn-outline-primary btn-sm rounded-pill px-4 mt-2">Xem tất cả</a>
+        </div>
+    }
+    else
+    {
+        <div class="demo-product-grid">
+            @foreach (var p in Model.Products)
+            {
+                var discountPrice = p.Price * 1.15m;
+                <div class="demo-product-card">
+                    <span class="demo-card-badge @(p.Id % 2 == 0 ? "badge-hot" : "")">
+                        @(p.Id % 2 == 0 ? "Bán chạy" : "Giá tốt")
+                    </span>
+
+                    <button type="button" class="demo-wishlist-btn" title="Yêu thích">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                        </svg>
+                    </button>
+
+                    <a asp-page="/ProductDetail" asp-route-id="@p.Id" class="demo-card-img-wrap text-decoration-none">
+                        <img src="@(string.IsNullOrEmpty(p.ImageUrl) ? "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9" : p.ImageUrl)" 
+                             alt="@p.Name" loading="lazy" />
+                    </a>
+
+                    <div class="demo-card-brand">@p.Brand</div>
+
+                    <a asp-page="/ProductDetail" asp-route-id="@p.Id" class="demo-card-title">@p.Name</a>
+
+                    <div class="demo-card-specs">
+                        @(string.IsNullOrEmpty(p.Specifications) ? "Chính hãng • Bảo hành " + p.WarrantyMonths + " tháng" : p.Specifications)
+                    </div>
+
+                    <div class="demo-card-price-row">
+                        <div class="demo-card-price">@p.Price.ToString("N0") đ</div>
+                        <div class="demo-card-oldprice">@discountPrice.ToString("N0") đ</div>
+                    </div>
+
+                    <!-- Hiển thị số lượng tồn kho thực tế cho khách xem -->
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        @if (p.Quantity > 0)
+                        {
+                            <span class="badge bg-light text-success border px-2 py-1 small fw-semibold">
+                                Còn: <strong>@p.Quantity</strong> SP
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-light text-danger border px-2 py-1 small fw-semibold">
+                                Tạm hết hàng
+                            </span>
+                        }
+                        <span class="small text-secondary" style="font-size:0.75rem;">BH @p.WarrantyMonths tháng</span>
+                    </div>
+
+                    @if (p.Quantity > 0)
+                    {
+                        <button type="button" class="demo-btn-addcart" onclick="addToCartAjax(@p.Id)">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                            </svg>
+                            <span>Thêm vào giỏ</span>
+                        </button>
+                    }
+                    else
+                    {
+                        <button type="button" class="demo-btn-addcart disabled" disabled style="background:#e2e8f0; color:#94a3b8; border-color:#cbd5e1; cursor:not-allowed;">
+                            <span>Hết hàng</span>
+                        </button>
+                    }
+                </div>
+            }
+        </div>
+
+        @if (Model.TotalPages > 1)
+        {
+            <div class="d-flex justify-content-center align-items-center gap-2 mt-4 pt-2">
+                <a asp-page="/Index" 
+                   asp-route-CurrentPage="@(Model.CurrentPage - 1)" 
+                   asp-route-CategoryId="@Model.CategoryId" 
+                   asp-route-Brand="@Model.Brand" 
+                   asp-route-SearchKeyword="@Model.SearchKeyword"
+                   asp-route-SortBy="@Model.SortBy"
+                   class="category-tab-btn" 
+                   style="@(Model.CurrentPage <= 1 ? "pointer-events:none; opacity:0.4; cursor:not-allowed;" : "")">
+                    &lsaquo;
+                </a>
+                @for (int i = 1; i <= Model.TotalPages; i++)
+                {
+                    <a asp-page="/Index" 
+                       asp-route-CurrentPage="@i" 
+                       asp-route-CategoryId="@Model.CategoryId" 
+                       asp-route-Brand="@Model.Brand" 
+                       asp-route-SearchKeyword="@Model.SearchKeyword"
+                       asp-route-SortBy="@Model.SortBy"
+                       class="category-tab-btn @(Model.CurrentPage == i ? "active" : "")">
+                        @i
+                    </a>
+                }
+                <a asp-page="/Index" 
+                   asp-route-CurrentPage="@(Model.CurrentPage + 1)" 
+                   asp-route-CategoryId="@Model.CategoryId" 
+                   asp-route-Brand="@Model.Brand" 
+                   asp-route-SearchKeyword="@Model.SearchKeyword"
+                   asp-route-SortBy="@Model.SortBy"
+                   class="category-tab-btn" 
+                   style="@(Model.CurrentPage >= Model.TotalPages ? "pointer-events:none; opacity:0.4; cursor:not-allowed;" : "")">
+                    &rsaquo;
+                </a>
+            </div>
+        }
+    }
+
+    <!-- ================= 6. PROMOTIONAL BANNER: SONY AUDIO ================= -->
+    <section class="promo-audio-banner">
+        <div class="row align-items-center g-0">
+            <div class="col-lg-6 p-4 p-md-5">
+                <span class="badge bg-primary bg-opacity-10 text-primary fw-bold px-3 py-2 rounded-pill small mb-3">
+                    ÂM THANH ĐỈNH CAO
+                </span>
+                <h2 class="fw-extrabold text-dark mb-3" style="font-size:2.4rem; letter-spacing:-0.03em;">
+                    Tắt ồn ào.<br/>Bật thế giới riêng.
+                </h2>
+                <p class="text-secondary mb-4" style="line-height:1.6;">
+                    Sony WH-1000XM5 • Chống ồn chủ động ANC chuẩn studio. Tận hưởng chất âm Hi-Res sắc nét với thời lượng pin lên đến 30 giờ liên tục.
+                </p>
+                <a asp-page="/ProductDetail" asp-route-id="6" class="btn btn-primary px-4 py-2 rounded-3 fw-semibold" style="background:var(--accent-blue); border:none;">
+                    Khám phá âm thanh
+                </a>
+            </div>
+            <div class="col-lg-6 text-center p-3">
+                <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e" 
+                     alt="Sony WH-1000XM5" 
+                     class="img-fluid rounded-4" 
+                     style="max-height:340px; object-fit:cover; width:92%;" />
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= 7. LIFESTYLE SPLIT PROMO ================= -->
+    <section class="row g-4 mb-5">
+        <div class="col-md-6">
+            <a asp-page="/Index" asp-route-CategoryId="2" class="promo-lifestyle-card">
+                <img src="https://images.unsplash.com/photo-1517336714731-489689fd1ca8" alt="Laptop Workspace" />
+                <div class="p-4 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="fw-bold text-dark mb-1">Góc làm việc, đầy cảm hứng.</h5>
+                        <p class="text-secondary small mb-0">Laptop mỏng nhẹ. Hiệu năng không giới hạn.</p>
+                    </div>
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="text-secondary">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                    </svg>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-6">
+            <a asp-page="/Index" asp-route-CategoryId="1" class="promo-lifestyle-card">
+                <img src="https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0" alt="Tablet Workspace" />
+                <div class="p-4 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="fw-bold text-dark mb-1">Luôn kết nối. Luôn chuyển động.</h5>
+                        <p class="text-secondary small mb-0">Thiết bị thông minh đồng hành cho từng mục tiêu.</p>
+                    </div>
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="text-secondary">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                    </svg>
+                </div>
+            </a>
+        </div>
+    </section>
+
+    <!-- ================= 8. TECH INSIGHTS ================= -->
+    <section class="mb-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4 class="fw-bold text-dark mb-0">Góc nhìn công nghệ</h4>
+            <a asp-page="/Index" asp-route-news="true" class="small fw-semibold text-primary text-decoration-none">Đọc thêm &rarr;</a>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="tech-insight-card">
+                    <span class="text-primary fw-bold small text-uppercase mb-2">Tư vấn chọn mua</span>
+                    <h6 class="fw-bold text-dark mb-3">Chọn laptop đồ họa: cấu hình nào thực sự phù hợp?</h6>
+                    <div class="mt-auto d-flex justify-content-between align-items-center text-secondary small">
+                        <span>6 phút đọc • 20/10/2026</span>
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="tech-insight-card">
+                    <span class="text-primary fw-bold small text-uppercase mb-2">Trải nghiệm</span>
+                    <h6 class="fw-bold text-dark mb-3">iPhone 15 Pro Max: sức mạnh từ những chi tiết nhỏ</h6>
+                    <div class="mt-auto d-flex justify-content-between align-items-center text-secondary small">
+                        <span>5 phút đọc • 18/10/2026</span>
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="tech-insight-card">
+                    <span class="text-primary fw-bold small text-uppercase mb-2">Mẹo hữu ích</span>
+                    <h6 class="fw-bold text-dark mb-3">5 cách để tai nghe chống ồn luôn bền đẹp như mới</h6>
+                    <div class="mt-auto d-flex justify-content-between align-items-center text-secondary small">
+                        <span>4 phút đọc • 16/10/2026</span>
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= 9. HOTLINE CTA BANNER ================= -->
+    <section class="hotline-banner">
+        <div class="d-flex align-items-center gap-3">
+            <div class="trust-badge-icon" style="width:48px; height:48px;">
+                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+                </svg>
+            </div>
+            <div>
+                <h5 class="fw-bold text-dark mb-1">Bạn cần một lời khuyên đúng?</h5>
+                <p class="text-secondary small mb-0">Chuyên gia ElectroStore luôn sẵn sàng giúp bạn chọn thiết bị phù hợp nhất.</p>
+            </div>
+        </div>
+        <a href="tel:18006868" class="btn btn-outline-primary rounded-pill px-4 py-2 fw-semibold d-none d-sm-inline-flex align-items-center gap-2">
+            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+            Gọi 1800 6868
+        </a>
+    </section>
+
+    <!-- ================= 10. NEWSLETTER STRIP ================= -->
+    <section class="newsletter-strip">
+        <div class="row align-items-center">
+            <div class="col-lg-6 mb-3 mb-lg-0">
+                <h4 class="fw-bold text-dark mb-1">Đón công nghệ mới. Nhận ưu đãi riêng.</h4>
+                <p class="text-secondary small mb-0">Bản tin chọn lọc, gửi đến bạn mỗi tuần. Không làm phiền.</p>
+            </div>
+            <div class="col-lg-6">
+                <div class="d-flex gap-2">
+                    <input type="email" class="form-control form-control-custom" placeholder="Địa chỉ email của bạn" />
+                    <button type="button" class="btn btn-primary px-4 fw-semibold" style="background:var(--accent-blue); border:none; border-radius:10px;">
+                        Đăng ký
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+@section Scripts {
+    <script>
+        function applySortChange(sortVal) {
+            const url = new URL(window.location.href);
+            url.searchParams.set('SortBy', sortVal);
+            url.searchParams.set('CurrentPage', '1');
+            window.location.href = url.toString();
+        }
+
+        function addToCartAjax(productId) {
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+            const formData = new FormData();
+            formData.append('productId', productId);
+            formData.append('quantity', 1);
+
+            fetch('?handler=AddToCart', {
+                method: 'POST',
+                headers: {
+                    'RequestVerificationToken': token
+                },
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    const badge = document.querySelector('.nav-cart-badge');
+                    if (badge) {
+                        badge.textContent = data.count;
+                    }
+                    showToast(data.message);
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(err => console.error(err));
+        }
+
+        function showToast(msg) {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            const toast = document.createElement('div');
+            toast.className = 'electro-toast';
+            toast.innerHTML = `<svg width="20" height="20" fill="none" stroke="#22c55e" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span>${msg}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+    </script>
+}

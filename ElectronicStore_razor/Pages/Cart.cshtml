@@ -1,0 +1,219 @@
+@page "/cart"
+@model ElectronicStore_razor.Pages.CartModel
+@{
+    ViewData["Title"] = "Giỏ Hàng";
+}
+
+<div class="container py-3">
+    <!-- Breadcrumb -->
+    <nav class="mb-3" style="--bs-breadcrumb-divider: '›';">
+        <ol class="breadcrumb small mb-0">
+            <li class="breadcrumb-item"><a asp-page="/Index" class="text-secondary text-decoration-none">Trang chủ</a></li>
+            <li class="breadcrumb-item active text-dark fw-semibold" aria-current="page">Giỏ hàng</li>
+        </ol>
+    </nav>
+
+    <!-- Header & Stepper -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h1 class="fw-bold text-dark mb-1" style="font-size:2.2rem; letter-spacing:-0.02em;">Giỏ hàng của bạn</h1>
+            <p class="text-secondary small mb-0">@Model.CartItems.Count sản phẩm được chọn cho trải nghiệm tiếp theo.</p>
+        </div>
+
+        <!-- Stepper -->
+        <div class="checkout-stepper m-0">
+            <div class="stepper-step active">
+                <span class="stepper-num">1</span>
+                <span>Giỏ hàng</span>
+            </div>
+            <div class="stepper-divider"></div>
+            <div class="stepper-step">
+                <span class="stepper-num">2</span>
+                <span>Thanh toán</span>
+            </div>
+            <div class="stepper-divider"></div>
+            <div class="stepper-step">
+                <span class="stepper-num">3</span>
+                <span>Hoàn tất</span>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.CartItems.Count == 0)
+    {
+        <div class="bg-white border rounded-4 text-center py-5 my-4 p-4">
+            <div class="text-secondary mb-3">
+                <svg width="64" height="64" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+                </svg>
+            </div>
+            <h4 class="text-dark fw-bold mb-2">Giỏ hàng của bạn đang trống!</h4>
+            <p class="text-secondary small mb-4">Hãy khám phá các thiết bị công nghệ đỉnh cao và thêm vào giỏ nhé.</p>
+            <a asp-page="/Index" class="btn btn-primary rounded-pill px-4 py-2 fw-semibold" style="background:var(--accent-blue); border:none;">
+                Tiếp tục mua sắm
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="row g-4">
+            <!-- Cột trái: Danh sách sản phẩm -->
+            <div class="col-lg-8">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="fw-bold text-dark">Sản phẩm (@Model.CartItems.Count)</span>
+                    <form method="post" asp-page-handler="Clear">
+                        <button type="submit" class="btn btn-link text-secondary text-decoration-none small p-0"
+                                onclick="return confirm('Bạn có chắc muốn xóa tất cả sản phẩm khỏi giỏ hàng?');">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="me-1">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                            Xóa tất cả giỏ hàng
+                        </button>
+                    </form>
+                </div>
+
+                <div class="d-flex flex-column gap-3">
+                    @foreach (var item in Model.CartItems)
+                    {
+                        <div class="bg-white border rounded-4 p-4 shadow-sm" id="cart-item-@item.ProductId">
+                            <div class="row align-items-center g-3">
+                                <div class="col-auto">
+                                    <div class="bg-light rounded-3 p-2 d-flex align-items-center justify-content-center" style="width:96px; height:96px;">
+                                        <img src="@(string.IsNullOrEmpty(item.ImageUrl) ? "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9" : item.ImageUrl)" 
+                                             alt="@item.ProductName" style="max-width:100%; max-height:100%; object-fit:contain;" />
+                                    </div>
+                                </div>
+
+                                <div class="col">
+                                    <div class="small fw-bold text-secondary text-uppercase mb-1" style="font-size:0.75rem;">@item.Brand</div>
+                                    <h5 class="fw-bold text-dark mb-1">
+                                        <a asp-page="/ProductDetail" asp-route-id="@item.ProductId" class="text-dark text-decoration-none">@item.ProductName</a>
+                                    </h5>
+                                    <div class="text-secondary small mb-2">Bảo hành chính hãng @item.WarrantyMonths tháng</div>
+                                    <div class="text-secondary small">
+                                        Đơn giá: <span class="fw-semibold text-dark">@item.UnitPrice.ToString("N0") đ</span>
+                                    </div>
+                                </div>
+
+                                <div class="col-12 col-sm-auto text-sm-end">
+                                    <div class="fw-bold text-dark fs-5 mb-2" id="item-total-@item.ProductId">
+                                        @item.TotalPrice.ToString("N0") đ
+                                    </div>
+
+                                    <div class="d-flex align-items-center justify-content-sm-end gap-2">
+                                        <div class="input-group input-group-sm" style="width: 100px;">
+                                            <button class="btn btn-outline-secondary" type="button" onclick="updateQtyAjax(@item.ProductId, parseInt(document.getElementById('qty-val-@item.ProductId').value) - 1, @item.StockQuantity)">-</button>
+                                            <input type="text" class="form-control text-center fw-bold bg-white" readonly value="@item.Quantity" id="qty-val-@item.ProductId" />
+                                            <button class="btn btn-outline-secondary" type="button" onclick="updateQtyAjax(@item.ProductId, parseInt(document.getElementById('qty-val-@item.ProductId').value) + 1, @item.StockQuantity)" @(item.Quantity >= item.StockQuantity ? "disabled" : "")>+</button>
+                                        </div>
+                                    </div>
+
+                                    <form method="post" asp-page-handler="Remove" asp-route-productId="@item.ProductId" class="d-inline">
+                                        <button type="submit" class="btn btn-link text-secondary text-decoration-none small p-0 mt-2">
+                                            Xóa
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+
+                            <div class="mt-3 pt-2 border-top small text-secondary">
+                                Còn @item.StockQuantity sản phẩm • Số lượng tối đa: @item.StockQuantity
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <div class="mt-4">
+                    <a asp-page="/Index" class="text-primary text-decoration-none fw-semibold small d-inline-flex align-items-center gap-1">
+                        &larr; Tiếp tục mua sắm
+                    </a>
+                </div>
+            </div>
+
+            <!-- Cột phải: Tóm tắt đơn hàng Sticky -->
+            <div class="col-lg-4">
+                <div class="order-summary-card sticky-top" style="top: 90px;">
+                    <h5 class="fw-bold text-dark mb-4">Tóm tắt đơn hàng</h5>
+
+                    <div class="d-flex justify-content-between mb-3 small">
+                        <span class="text-secondary">Tạm tính (@Model.CartItems.Sum(c => c.Quantity) sản phẩm)</span>
+                        <span class="fw-bold text-dark" id="summary-subtotal">@Model.TotalAmount.ToString("N0") đ</span>
+                    </div>
+
+                    <div class="d-flex justify-content-between mb-3 small">
+                        <span class="text-secondary">Giao hàng toàn quốc</span>
+                        <span class="fw-bold text-success">Miễn phí</span>
+                    </div>
+
+                    <hr class="my-3 text-secondary opacity-25" />
+
+                    <div class="d-flex justify-content-between align-items-baseline mb-1">
+                        <span class="fw-bold text-dark">Tổng thanh toán</span>
+                        <span class="fw-extrabold text-primary fs-3" id="summary-total">@Model.TotalAmount.ToString("N0") đ</span>
+                    </div>
+                    <div class="text-secondary small mb-4">Đã bao gồm VAT</div>
+
+                    <a asp-page="/Checkout" class="btn btn-primary w-100 py-3 fw-bold rounded-3 d-flex align-items-center justify-content-center gap-2 mb-3"
+                       style="background:var(--accent-blue); border:none;">
+                        <span>Tiến hành thanh toán</span>
+                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                        </svg>
+                    </a>
+
+                    <div class="text-center text-secondary small">
+                        Thanh toán an toàn • Thông tin được bảo mật
+                    </div>
+                </div>
+
+                <div class="mt-3 p-3 bg-white border rounded-4 d-flex align-items-center gap-3 small text-secondary">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="text-primary flex-shrink-0">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"/>
+                    </svg>
+                    <span>Giao hàng toàn quốc trong 2–4 ngày làm việc. Kiểm tra hàng trước khi thanh toán.</span>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        function updateQtyAjax(productId, qty, maxStock) {
+            if (qty < 1 || (maxStock && qty > maxStock)) return;
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+            const formData = new FormData();
+            formData.append('productId', productId);
+            formData.append('quantity', qty);
+
+            fetch('?handler=UpdateQuantity', {
+                method: 'POST',
+                headers: {
+                    'RequestVerificationToken': token,
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    const qtyVal = document.getElementById(`qty-val-${productId}`);
+                    if (qtyVal) qtyVal.value = data.itemQuantity;
+
+                    const itemTotal = document.getElementById(`item-total-${productId}`);
+                    if (itemTotal) itemTotal.textContent = Number(data.itemTotal).toLocaleString('vi-VN') + ' đ';
+
+                    const subtotal = document.getElementById('summary-subtotal');
+                    if (subtotal) subtotal.textContent = Number(data.totalAmount).toLocaleString('vi-VN') + ' đ';
+
+                    const total = document.getElementById('summary-total');
+                    if (total) total.textContent = Number(data.totalAmount).toLocaleString('vi-VN') + ' đ';
+
+                    const navBadge = document.querySelector('.nav-cart-badge');
+                    if (navBadge) navBadge.textContent = data.cartCount;
+                }
+            })
+            .catch(err => console.error(err));
+        }
+    </script>
+}

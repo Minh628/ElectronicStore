@@ -69,7 +69,6 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AddPageRoute("/MyOrders", "my-orders");
     options.Conventions.AddPageRoute("/Account/Profile", "profile");
 });
-builder.Services.AddSingleton<IProductService, ProductService>();
 
 var app = builder.Build();
 

@@ -20,117 +20,117 @@ build_property.TargetFrameworkVersion = v10.0
 build_property.EntryPointFilePath = 
 build_property.RootNamespace = ElectronicStore_razor
 build_property.RootNamespace = ElectronicStore_razor
-build_property.ProjectDir = C:\Users\DELL\Desktop\ElectronicStore\ElectronicStore_razor\
+build_property.ProjectDir = C:\Users\Raymond\Desktop\BAITAP.NET\ElectronicStore_razor\
 build_property.EnableComHosting = 
 build_property.EnableGeneratedComInterfaceComImportInterop = 
 build_property.RazorLangVersion = 10.0
 build_property.SupportLocalizedComponentNames = 
 build_property.GenerateRazorMetadataSourceChecksumAttributes = 
-build_property.MSBuildProjectDirectory = C:\Users\DELL\Desktop\ElectronicStore\ElectronicStore_razor
+build_property.MSBuildProjectDirectory = C:\Users\Raymond\Desktop\BAITAP.NET\ElectronicStore_razor
 build_property._RazorSourceGeneratorDebug = 
 build_property.EffectiveAnalysisLevelStyle = 10.0
 build_property.EnableCodeStyleSeverity = 
 
-[C:/Users/DELL/Desktop/ElectronicStore/ElectronicStore_razor/Pages/Account/AccessDenied.cshtml]
+[C:/Users/Raymond/Desktop/BAITAP.NET/ElectronicStore_razor/Pages/Account/AccessDenied.cshtml]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWNjb3VudFxBY2Nlc3NEZW5pZWQuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/DELL/Desktop/ElectronicStore/ElectronicStore_razor/Pages/Account/Login.cshtml]
+[C:/Users/Raymond/Desktop/BAITAP.NET/ElectronicStore_razor/Pages/Account/Login.cshtml]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWNjb3VudFxMb2dpbi5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/DELL/Desktop/ElectronicStore/ElectronicStore_razor/Pages/Account/Logout.cshtml]
+[C:/Users/Raymond/Desktop/BAITAP.NET/ElectronicStore_razor/Pages/Account/Logout.cshtml]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWNjb3VudFxMb2dvdXQuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/DELL/Desktop/ElectronicStore/ElectronicStore_razor/Pages/Account/Profile.cshtml]
+[C:/Users/Raymond/Desktop/BAITAP.NET/ElectronicStore_razor/Pages/Account/Profile.cshtml]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWNjb3VudFxQcm9maWxlLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/DELL/Desktop/ElectronicStore/ElectronicStore_razor/Pages/Account/Register.cshtml]
+[C:/Users/Raymond/Desktop/BAITAP.NET/ElectronicStore_razor/Pages/Account/Register.cshtml]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWNjb3VudFxSZWdpc3Rlci5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/DELL/Desktop/ElectronicStore/ElectronicStore_razor/Pages/Admin/Accounts.cshtml]
+[C:/Users/Raymond/Desktop/BAITAP.NET/ElectronicStore_razor/Pages/Admin/Accounts.cshtml]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWRtaW5cQWNjb3VudHMuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/DELL/Desktop/ElectronicStore/ElectronicStore_razor/Pages/Admin/Categories.cshtml]
+[C:/Users/Raymond/Desktop/BAITAP.NET/ElectronicStore_razor/Pages/Admin/Categories.cshtml]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWRtaW5cQ2F0ZWdvcmllcy5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/DELL/Desktop/ElectronicStore/ElectronicStore_razor/Pages/Admin/Index.cshtml]
+[C:/Users/Raymond/Desktop/BAITAP.NET/ElectronicStore_razor/Pages/Admin/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWRtaW5cSW5kZXguY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/DELL/Desktop/ElectronicStore/ElectronicStore_razor/Pages/Admin/Login.cshtml]
+[C:/Users/Raymond/Desktop/BAITAP.NET/ElectronicStore_razor/Pages/Admin/Login.cshtml]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWRtaW5cTG9naW4uY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/DELL/Desktop/ElectronicStore/ElectronicStore_razor/Pages/Admin/Orders.cshtml]
+[C:/Users/Raymond/Desktop/BAITAP.NET/ElectronicStore_razor/Pages/Admin/Orders.cshtml]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWRtaW5cT3JkZXJzLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/DELL/Desktop/ElectronicStore/ElectronicStore_razor/Pages/Admin/Products.cshtml]
+[C:/Users/Raymond/Desktop/BAITAP.NET/ElectronicStore_razor/Pages/Admin/Products.cshtml]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWRtaW5cUHJvZHVjdHMuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/DELL/Desktop/ElectronicStore/ElectronicStore_razor/Pages/Admin/_ViewStart.cshtml]
+[C:/Users/Raymond/Desktop/BAITAP.NET/ElectronicStore_razor/Pages/Admin/_ViewStart.cshtml]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWRtaW5cX1ZpZXdTdGFydC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/DELL/Desktop/ElectronicStore/ElectronicStore_razor/Pages/Cart.cshtml]
+[C:/Users/Raymond/Desktop/BAITAP.NET/ElectronicStore_razor/Pages/Cart.cshtml]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQ2FydC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/DELL/Desktop/ElectronicStore/ElectronicStore_razor/Pages/Checkout.cshtml]
+[C:/Users/Raymond/Desktop/BAITAP.NET/ElectronicStore_razor/Pages/Checkout.cshtml]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQ2hlY2tvdXQuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/DELL/Desktop/ElectronicStore/ElectronicStore_razor/Pages/Error.cshtml]
+[C:/Users/Raymond/Desktop/BAITAP.NET/ElectronicStore_razor/Pages/Error.cshtml]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcRXJyb3IuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/DELL/Desktop/ElectronicStore/ElectronicStore_razor/Pages/Index.cshtml]
+[C:/Users/Raymond/Desktop/BAITAP.NET/ElectronicStore_razor/Pages/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcSW5kZXguY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/DELL/Desktop/ElectronicStore/ElectronicStore_razor/Pages/MyOrders.cshtml]
+[C:/Users/Raymond/Desktop/BAITAP.NET/ElectronicStore_razor/Pages/MyOrders.cshtml]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcTXlPcmRlcnMuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/DELL/Desktop/ElectronicStore/ElectronicStore_razor/Pages/OrderSuccess.cshtml]
+[C:/Users/Raymond/Desktop/BAITAP.NET/ElectronicStore_razor/Pages/OrderSuccess.cshtml]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcT3JkZXJTdWNjZXNzLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/DELL/Desktop/ElectronicStore/ElectronicStore_razor/Pages/Privacy.cshtml]
+[C:/Users/Raymond/Desktop/BAITAP.NET/ElectronicStore_razor/Pages/Privacy.cshtml]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcUHJpdmFjeS5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/DELL/Desktop/ElectronicStore/ElectronicStore_razor/Pages/Product.cshtml]
+[C:/Users/Raymond/Desktop/BAITAP.NET/ElectronicStore_razor/Pages/Product.cshtml]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcUHJvZHVjdC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/DELL/Desktop/ElectronicStore/ElectronicStore_razor/Pages/ProductDetail.cshtml]
+[C:/Users/Raymond/Desktop/BAITAP.NET/ElectronicStore_razor/Pages/ProductDetail.cshtml]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcUHJvZHVjdERldGFpbC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/DELL/Desktop/ElectronicStore/ElectronicStore_razor/Pages/Shared/_AdminLayout.cshtml]
+[C:/Users/Raymond/Desktop/BAITAP.NET/ElectronicStore_razor/Pages/Shared/_AdminLayout.cshtml]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcU2hhcmVkXF9BZG1pbkxheW91dC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/DELL/Desktop/ElectronicStore/ElectronicStore_razor/Pages/Shared/_ValidationScriptsPartial.cshtml]
+[C:/Users/Raymond/Desktop/BAITAP.NET/ElectronicStore_razor/Pages/Shared/_ValidationScriptsPartial.cshtml]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcU2hhcmVkXF9WYWxpZGF0aW9uU2NyaXB0c1BhcnRpYWwuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/DELL/Desktop/ElectronicStore/ElectronicStore_razor/Pages/_ViewImports.cshtml]
+[C:/Users/Raymond/Desktop/BAITAP.NET/ElectronicStore_razor/Pages/_ViewImports.cshtml]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcX1ZpZXdJbXBvcnRzLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/DELL/Desktop/ElectronicStore/ElectronicStore_razor/Pages/_ViewStart.cshtml]
+[C:/Users/Raymond/Desktop/BAITAP.NET/ElectronicStore_razor/Pages/_ViewStart.cshtml]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcX1ZpZXdTdGFydC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/DELL/Desktop/ElectronicStore/ElectronicStore_razor/Pages/Shared/_Layout.cshtml]
+[C:/Users/Raymond/Desktop/BAITAP.NET/ElectronicStore_razor/Pages/Shared/_Layout.cshtml]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcU2hhcmVkXF9MYXlvdXQuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = b-qtnpzwr890

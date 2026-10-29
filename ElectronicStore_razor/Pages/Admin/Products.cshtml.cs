@@ -109,10 +109,26 @@ public class ProductsModel : PageModel
         // Xử lý tải ảnh từ máy tính (Desktop) nếu người dùng chọn upload file
         if (ImageUpload != null && ImageUpload.Length > 0)
         {
+            if (ImageUpload.Length > 5 * 1024 * 1024)
+            {
+                AlertMessage = "Ảnh sản phẩm không được vượt quá 5 MB.";
+                AlertType = "danger";
+                return RedirectToPage();
+            }
+
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+            var extension = Path.GetExtension(ImageUpload.FileName).ToLowerInvariant();
+            if (!allowedExtensions.Contains(extension))
+            {
+                AlertMessage = "Chỉ chấp nhận ảnh JPG, JPEG, PNG hoặc WEBP.";
+                AlertType = "danger";
+                return RedirectToPage();
+            }
+
             var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "products");
             if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
 
-            var uniqueFileName = $"{Guid.NewGuid()}_{Path.GetFileName(ImageUpload.FileName)}";
+            var uniqueFileName = $"{Guid.NewGuid():N}{extension}";
             var filePath = Path.Combine(uploadsFolder, uniqueFileName);
             using (var stream = new FileStream(filePath, FileMode.Create))
             {

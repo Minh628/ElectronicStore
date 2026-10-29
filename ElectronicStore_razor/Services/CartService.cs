@@ -36,7 +36,7 @@ public class CartService
         {
             return JsonSerializer.Deserialize<List<CartItem>>(json) ?? new List<CartItem>();
         }
-        catch
+        catch (JsonException)
         {
             return new List<CartItem>();
         }

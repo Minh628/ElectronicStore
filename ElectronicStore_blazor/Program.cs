@@ -29,7 +29,8 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents(options => options.DetailedErrors = true);
+    .AddInteractiveServerComponents(options => options.DetailedErrors = builder.Environment.IsDevelopment());
+builder.Services.AddCascadingAuthenticationState();
 
 // Đăng ký dịch vụ ProductService kết nối SQL Server và CartService quản lý giỏ hàng
 builder.Services.AddScoped<IProductService, ProductService>();

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using System.Data;
 using ElectronicStore_razor.Data;
 using ElectronicStore_razor.Models;
 using ElectronicStore_razor.Models.Entities;
@@ -84,6 +85,7 @@ public class CheckoutModel : PageModel
             return RedirectToPage("/Cart");
         }
 
+        await using var transaction = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
         TotalAmount = _cartService.GetTotal();
 
         if (string.IsNullOrWhiteSpace(FullName) || string.IsNullOrWhiteSpace(PhoneNumber) || string.IsNullOrWhiteSpace(ShippingAddress))
@@ -180,8 +182,10 @@ public class CheckoutModel : PageModel
         }
 
         await _context.SaveChangesAsync();
+        await transaction.CommitAsync();
 
         // 6. Xóa sạch giỏ hàng trong Session
+        HttpContext.Session.SetInt32("LastGuestOrderId", order.Id);
         _cartService.ClearCart();
 
         return RedirectToPage("/OrderSuccess", new { orderId = order.Id });

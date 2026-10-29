@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Data;
 using ElectronicStore_mvc.Data;
 using ElectronicStore_mvc.Models.Entities;
 using ElectronicStore_mvc.Services;
@@ -61,6 +62,8 @@ public class CheckoutController : Controller
         {
             return RedirectToAction("Index", "Cart");
         }
+
+        await using var transaction = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
 
         // Hàm cục bộ điền lại dữ liệu form khi validation lỗi để người dùng không phải gõ lại
         void PreserveFormData()
@@ -171,8 +174,10 @@ public class CheckoutController : Controller
         }
 
         await _context.SaveChangesAsync();
+        await transaction.CommitAsync();
 
         // 6. Xóa sạch giỏ hàng trong session sau khi đặt hàng thành công
+        HttpContext.Session.SetInt32("LastGuestOrderId", order.Id);
         _cartService.ClearCart();
 
         return RedirectToAction("OrderSuccess", new { id = order.Id });
@@ -187,6 +192,18 @@ public class CheckoutController : Controller
             .Include(o => o.OrderDetails)
                 .ThenInclude(od => od.Product)
             .FirstOrDefaultAsync(o => o.Id == actualId);
+
+        if (order != null && !User.IsInRole("Admin"))
+        {
+            var user = await _userManager.GetUserAsync(User);
+            var ownsOrder = user != null
+                ? order.UserId == user.Id
+                : order.UserId == null && HttpContext.Session.GetInt32("LastGuestOrderId") == actualId;
+            if (!ownsOrder)
+            {
+                return NotFound();
+            }
+        }
 
         return View(order);
     }

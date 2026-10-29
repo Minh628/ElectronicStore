@@ -336,6 +336,7 @@
         var result = ProductService.PlaceOrder(fullName, phoneNumber, email, shippingAddress, paymentMethod, notes, Cart.Items, userId);
         if (result.Success)
         {
+            Cart.LastGuestOrderId = result.OrderId;
             Cart.Clear();
             Navigation.NavigateTo($"ordersuccess?orderId={result.OrderId}");
         }

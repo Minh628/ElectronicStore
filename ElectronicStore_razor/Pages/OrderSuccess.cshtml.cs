@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using ElectronicStore_razor.Data;
 using ElectronicStore_razor.Models.Entities;
@@ -9,10 +10,14 @@ namespace ElectronicStore_razor.Pages;
 public class OrderSuccessModel : PageModel
 {
     private readonly ElectronicStoreDbContext _context;
+    private readonly UserManager<ApplicationUser> _userManager;
 
-    public OrderSuccessModel(ElectronicStoreDbContext context)
+    public OrderSuccessModel(
+        ElectronicStoreDbContext context,
+        UserManager<ApplicationUser> userManager)
     {
         _context = context;
+        _userManager = userManager;
     }
 
     public Order? Order { get; set; }
@@ -26,6 +31,18 @@ public class OrderSuccessModel : PageModel
             .Include(o => o.OrderDetails)
                 .ThenInclude(od => od.Product)
             .FirstOrDefaultAsync(o => o.Id == targetId);
+
+        if (Order != null && !User.IsInRole("Admin"))
+        {
+            var user = await _userManager.GetUserAsync(User);
+            var ownsOrder = user != null
+                ? Order.UserId == user.Id
+                : Order.UserId == null && HttpContext.Session.GetInt32("LastGuestOrderId") == targetId;
+            if (!ownsOrder)
+            {
+                return NotFound();
+            }
+        }
 
         return Page();
     }

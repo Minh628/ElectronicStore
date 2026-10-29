@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.JSInterop;
 using ElectronicStore_blazor.Models.Entities;
 
@@ -6,12 +7,18 @@ namespace ElectronicStore_blazor.Services;
 
 public class UserService
 {
-    private const string AuthStorageKey = "electro_auth_user";
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly SignInManager<ApplicationUser> _signInManager;
+    private readonly AuthenticationStateProvider _authenticationStateProvider;
 
-    public UserService(UserManager<ApplicationUser> userManager)
+    public UserService(
+        UserManager<ApplicationUser> userManager,
+        SignInManager<ApplicationUser> signInManager,
+        AuthenticationStateProvider authenticationStateProvider)
     {
         _userManager = userManager;
+        _signInManager = signInManager;
+        _authenticationStateProvider = authenticationStateProvider;
     }
 
     public ApplicationUser? CurrentUser { get; private set; }
@@ -22,7 +29,7 @@ public class UserService
     public event Action? OnChange;
 
     /// <summary>
-    /// Khôi phục trạng thái đăng nhập từ localStorage của trình duyệt khi người dùng reload trang (F5)
+    /// Khôi phục trạng thái đăng nhập từ Identity cookie sau khi người dùng reload trang.
     /// </summary>
     public async Task<bool> RestoreSessionAsync(IJSRuntime js)
     {
@@ -30,10 +37,10 @@ public class UserService
 
         try
         {
-            var username = await js.InvokeAsync<string?>("localStorage.getItem", AuthStorageKey);
-            if (!string.IsNullOrWhiteSpace(username))
+            var state = await _authenticationStateProvider.GetAuthenticationStateAsync();
+            if (state.User.Identity?.IsAuthenticated == true)
             {
-                var user = await _userManager.FindByNameAsync(username.Trim());
+                var user = await _userManager.GetUserAsync(state.User);
                 if (user != null && user.IsActive)
                 {
                     var roles = await _userManager.GetRolesAsync(user);
@@ -42,16 +49,11 @@ public class UserService
                     OnChange?.Invoke();
                     return true;
                 }
-                else
-                {
-                    // Tài khoản không tồn tại hoặc đã bị khóa -> xóa localStorage
-                    await js.InvokeVoidAsync("localStorage.removeItem", AuthStorageKey);
-                }
             }
         }
         catch
         {
-            // Bỏ qua ngoại lệ nếu JSInterop chưa sẵn sàng
+            // Authentication state may not be available during prerendering.
         }
 
         return false;
@@ -70,8 +72,12 @@ public class UserService
             return (false, "Tài khoản của bạn đã bị Admin KHÓA! Vui lòng liên hệ ban quản trị.");
         }
 
-        var checkPassword = await _userManager.CheckPasswordAsync(user, password.Trim());
-        if (!checkPassword)
+        var result = await _signInManager.PasswordSignInAsync(
+            user,
+            password.Trim(),
+            isPersistent: true,
+            lockoutOnFailure: false);
+        if (!result.Succeeded)
         {
             return (false, "Tên đăng nhập hoặc mật khẩu không chính xác!");
         }
@@ -79,15 +85,6 @@ public class UserService
         var roles = await _userManager.GetRolesAsync(user);
         CurrentRole = roles.FirstOrDefault() ?? "Customer";
         CurrentUser = user;
-
-        if (js != null)
-        {
-            try
-            {
-                await js.InvokeVoidAsync("localStorage.setItem", AuthStorageKey, user.UserName);
-            }
-            catch {}
-        }
 
         OnChange?.Invoke();
         return (true, "Đăng nhập thành công!");
@@ -121,23 +118,18 @@ public class UserService
             return (false, "Tài khoản quản trị viên này hiện đang bị tạm khóa!");
         }
 
-        var checkPassword = await _userManager.CheckPasswordAsync(user, password.Trim());
-        if (!checkPassword)
+        var result = await _signInManager.PasswordSignInAsync(
+            user,
+            password.Trim(),
+            isPersistent: true,
+            lockoutOnFailure: false);
+        if (!result.Succeeded)
         {
             return (false, "Tài khoản hoặc mật khẩu quản trị không chính xác!");
         }
 
         CurrentRole = "Admin";
         CurrentUser = user;
-
-        if (js != null)
-        {
-            try
-            {
-                await js.InvokeVoidAsync("localStorage.setItem", AuthStorageKey, user.UserName);
-            }
-            catch {}
-        }
 
         OnChange?.Invoke();
         return (true, "Xác thực quyền quản trị thành công!");
@@ -156,17 +148,9 @@ public class UserService
 
     public async Task LogoutAsync(IJSRuntime? js = null)
     {
+        await _signInManager.SignOutAsync();
         CurrentUser = null;
         CurrentRole = string.Empty;
-
-        if (js != null)
-        {
-            try
-            {
-                await js.InvokeVoidAsync("localStorage.removeItem", AuthStorageKey);
-            }
-            catch {}
-        }
 
         OnChange?.Invoke();
     }

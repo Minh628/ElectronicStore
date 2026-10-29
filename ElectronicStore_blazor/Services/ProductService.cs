@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using System.Data;
 using ElectronicStore_blazor.Data;
 using ElectronicStore_blazor.Models;
 using ElectronicStore_blazor.Models.Entities;
@@ -195,14 +196,23 @@ public class ProductService : IProductService
         return query.OrderByDescending(o => o.OrderDate).ToList();
     }
 
-    public Order? GetOrderById(int id)
+    public Order? GetOrderById(int id, string? requesterUserId = null, bool requesterIsAdmin = false, int? guestOrderId = null)
     {
         using var context = _contextFactory.CreateDbContext();
-        return context.Orders
+        var query = context.Orders
             .Include(o => o.User)
             .Include(o => o.OrderDetails)
                 .ThenInclude(od => od.Product)
-            .FirstOrDefault(o => o.Id == id);
+            .Where(o => o.Id == id);
+
+        if (requesterIsAdmin)
+        {
+            return query.FirstOrDefault();
+        }
+
+        return query.FirstOrDefault(o =>
+            (requesterUserId != null && o.UserId == requesterUserId) ||
+            (o.UserId == null && guestOrderId == o.Id));
     }
 
     public bool UpdateOrderStatus(int orderId, string status)
@@ -305,6 +315,7 @@ public class ProductService : IProductService
         }
 
         using var context = _contextFactory.CreateDbContext();
+        using var transaction = context.Database.BeginTransaction(IsolationLevel.Serializable);
 
         // 3. Kiểm tra tính khả dụng và tồn kho thực tế của từng sản phẩm (tránh bán khống)
         foreach (var item in items)
@@ -356,6 +367,7 @@ public class ProductService : IProductService
             }
         }
         context.SaveChanges();
+        transaction.Commit();
 
         return (true, "Đặt hàng thành công!", order.Id);
     }

@@ -9,6 +9,7 @@ namespace ElectronicStore_blazor.Services;
 public class CartService
 {
     public List<CartItem> Items { get; private set; } = new();
+    public int? LastGuestOrderId { get; set; }
 
     public event Action? OnChange;
 

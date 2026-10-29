@@ -1,6 +1,8 @@
 @page "/ordersuccess"
 @page "/order-success"
 @inject IProductService ProductService
+@inject UserService UserService
+@inject CartService Cart
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 
@@ -177,7 +179,11 @@
         var targetId = OrderId ?? Id;
         if (targetId.HasValue && targetId.Value > 0)
         {
-            order = ProductService.GetOrderById(targetId.Value);
+            order = ProductService.GetOrderById(
+                targetId.Value,
+                UserService.CurrentUser?.Id,
+                UserService.IsAdmin,
+                UserService.IsAuthenticated ? null : Cart.LastGuestOrderId);
         }
     }
 }

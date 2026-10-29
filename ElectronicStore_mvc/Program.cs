@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ElectronicStore_mvc.Data;
 using ElectronicStore_mvc.Models.Entities;
@@ -63,7 +64,10 @@ builder.Services.AddSession(options =>
 // Đăng ký CartService
 builder.Services.AddScoped<CartService>();
 
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews(options =>
+{
+    options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
+});
 
 var app = builder.Build();
 

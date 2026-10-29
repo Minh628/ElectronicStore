@@ -80,10 +80,24 @@ public class AdminController : Controller
         // Xử lý upload ảnh từ máy tính (Desktop) nếu người dùng chọn file
         if (imageFile != null && imageFile.Length > 0)
         {
+            if (imageFile.Length > 5 * 1024 * 1024)
+            {
+                TempData["ErrorMessage"] = "Ảnh sản phẩm không được vượt quá 5 MB.";
+                return RedirectToAction(nameof(Products));
+            }
+
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+            var extension = Path.GetExtension(imageFile.FileName).ToLowerInvariant();
+            if (!allowedExtensions.Contains(extension))
+            {
+                TempData["ErrorMessage"] = "Chỉ chấp nhận ảnh JPG, JPEG, PNG hoặc WEBP.";
+                return RedirectToAction(nameof(Products));
+            }
+
             var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "products");
             if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
 
-            var uniqueFileName = $"{Guid.NewGuid()}_{Path.GetFileName(imageFile.FileName)}";
+            var uniqueFileName = $"{Guid.NewGuid():N}{extension}";
             var filePath = Path.Combine(uploadsFolder, uniqueFileName);
             using (var stream = new FileStream(filePath, FileMode.Create))
             {

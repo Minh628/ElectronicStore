@@ -1,4 +1,5 @@
 @page "/admin/accounts"
+@attribute [Authorize(Roles = "Admin")]
 @layout AdminLayout
 @inject IProductService ProductService
 @inject UserService UserService
@@ -464,6 +465,13 @@
 
     private async Task HandleCreateUser()
     {
+        if (newRole is not ("Customer" or "Admin"))
+        {
+            alertMessage = "Vai trò tài khoản không hợp lệ.";
+            alertType = "danger";
+            return;
+        }
+
         if (string.IsNullOrWhiteSpace(newUsername) || string.IsNullOrWhiteSpace(newPassword))
         {
             alertMessage = "Tên đăng nhập và mật khẩu không được để trống!";
@@ -498,11 +506,15 @@
             return;
         }
 
-        if (!await RoleManager.RoleExistsAsync(newRole))
+        var roleResult = await UserManager.AddToRoleAsync(user, newRole);
+        if (!roleResult.Succeeded)
         {
-            await RoleManager.CreateAsync(new IdentityRole(newRole));
+            await UserManager.DeleteAsync(user);
+            alertMessage = "Không thể gán vai trò cho tài khoản: " +
+                           string.Join("; ", roleResult.Errors.Select(e => e.Description));
+            alertType = "danger";
+            return;
         }
-        await UserManager.AddToRoleAsync(user, newRole);
 
         alertMessage = $"Đã tạo thành công tài khoản '{user.UserName}' với vai trò '{newRole}'!";
         alertType = "success";
@@ -525,6 +537,13 @@
     {
         if (editingUser == null) return;
 
+        if (editRole is not ("Customer" or "Admin"))
+        {
+            alertMessage = "Vai trò tài khoản không hợp lệ.";
+            alertType = "danger";
+            return;
+        }
+
         // Chặn Admin tự tước quyền quản trị của chính mình
         if (editingUser.UserName == UserService.CurrentUser?.UserName && editRole != "Admin")
         {
@@ -543,12 +562,15 @@
         var currentRoles = await UserManager.GetRolesAsync(editingUser);
         if (!currentRoles.Contains(editRole))
         {
-            if (!await RoleManager.RoleExistsAsync(editRole))
-            {
-                await RoleManager.CreateAsync(new IdentityRole(editRole));
-            }
             await UserManager.RemoveFromRolesAsync(editingUser, currentRoles);
-            await UserManager.AddToRoleAsync(editingUser, editRole);
+            var roleResult = await UserManager.AddToRoleAsync(editingUser, editRole);
+            if (!roleResult.Succeeded)
+            {
+                alertMessage = "Không thể cập nhật vai trò: " +
+                               string.Join("; ", roleResult.Errors.Select(e => e.Description));
+                alertType = "danger";
+                return;
+            }
         }
 
         alertMessage = $"Đã cập nhật thông tin tài khoản '{editingUser.UserName}'!";

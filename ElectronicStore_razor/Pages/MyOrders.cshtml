@@ -178,7 +178,7 @@
                             <!-- Card Header -->
                             <div class="d-flex flex-wrap justify-content-between align-items-center pb-3 border-bottom mb-3 gap-2">
                                 <div class="d-flex align-items-center gap-3">
-                                    <span class="fw-bold text-dark">#ES@order.Id.ToString("D7")</span>
+                                    <span class="fw-bold text-dark">#ES@(order.Id.ToString("D7"))</span>
                                     <span class="text-secondary small">@order.OrderDate.ToString("dd/MM/yyyy • HH:mm")</span>
                                 </div>
                                 <span class="demo-badge-status @statusClass">@statusLabel</span>

@@ -5,6 +5,7 @@ using ElectronicStore_mvc.Services;
 
 namespace ElectronicStore_mvc.Controllers;
 
+[IgnoreAntiforgeryToken]
 public class CartController : Controller
 {
     private readonly ElectronicStoreDbContext _context;

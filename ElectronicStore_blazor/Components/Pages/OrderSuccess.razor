@@ -43,7 +43,7 @@
         @if (order != null)
         {
             <div class="d-inline-flex align-items-center gap-2 small">
-                <span class="fw-bold text-dark">Mã đơn hàng #ES@order.Id.ToString("D7")</span>
+                <span class="fw-bold text-dark">Mã đơn hàng #ES@(order.Id.ToString("D7"))</span>
                 <span class="demo-badge-status status-pending">@(order.OrderStatus == "Pending" ? "Chờ duyệt" : order.OrderStatus)</span>
             </div>
         }

@@ -103,7 +103,7 @@
                                     <div class="d-flex align-items-center justify-content-sm-end gap-2">
                                         <div class="input-group input-group-sm" style="width: 100px;">
                                             <button class="btn btn-outline-secondary" type="button" onclick="updateQtyAjax(@item.ProductId, parseInt(document.getElementById('qty-val-@item.ProductId').value) - 1, @item.StockQuantity)">-</button>
-                                            <input type="text" class="form-control text-center fw-bold bg-white" readonly value="@item.Quantity" id="qty-val-@item.ProductId" />
+                                            <input type="number" class="form-control text-center fw-bold bg-white" min="1" max="@item.StockQuantity" value="@item.Quantity" id="qty-val-@item.ProductId" onchange="updateQtyAjax(@item.ProductId, parseInt(this.value) || 1, @item.StockQuantity)" />
                                             <button class="btn btn-outline-secondary" type="button" onclick="updateQtyAjax(@item.ProductId, parseInt(document.getElementById('qty-val-@item.ProductId').value) + 1, @item.StockQuantity)" @(item.Quantity >= item.StockQuantity ? "disabled" : "")>+</button>
                                         </div>
                                     </div>

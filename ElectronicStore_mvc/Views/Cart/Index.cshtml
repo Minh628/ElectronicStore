@@ -112,7 +112,7 @@
                                         <div class="input-group input-group-sm" style="width: 100px;">
                                             <button class="btn btn-outline-secondary" type="button" 
                                                     onclick="changeCartQtyAjax(@item.ProductId, -1, @item.StockQuantity)">-</button>
-                                            <input type="text" id="item-qty-@item.ProductId" class="form-control text-center fw-bold bg-white" readonly value="@item.Quantity" />
+                                            <input type="number" id="item-qty-@item.ProductId" class="form-control text-center fw-bold bg-white" min="1" max="@item.StockQuantity" value="@item.Quantity" onchange="setCartQtyAjax(@item.ProductId, this.value, @item.StockQuantity)" />
                                             <button class="btn btn-outline-secondary" type="button" id="btn-plus-@item.ProductId"
                                                     onclick="changeCartQtyAjax(@item.ProductId, 1, @item.StockQuantity)" 
                                                     @(item.Quantity >= item.StockQuantity ? "disabled" : "")>+</button>
@@ -191,6 +191,47 @@
 
 @section Scripts {
     <script>
+        function setCartQtyAjax(productId, val, maxStock) {
+            let qty = parseInt(val) || 1;
+            if (qty < 1) qty = 1;
+            if (qty > maxStock) qty = maxStock;
+            const qtyInput = document.getElementById(`item-qty-${productId}`);
+            if (qtyInput) qtyInput.value = qty;
+
+            const formData = new FormData();
+            formData.append('productId', productId);
+            formData.append('quantity', qty);
+
+            fetch('/Cart/UpdateQuantity', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    qtyInput.value = data.itemQuantity;
+                    const itemTotal = document.getElementById(`item-total-${productId}`);
+                    if (itemTotal) itemTotal.textContent = Number(data.itemTotal).toLocaleString('vi-VN') + ' đ';
+
+                    const subtotal = document.getElementById('cart-subtotal');
+                    if (subtotal) subtotal.textContent = Number(data.totalAmount).toLocaleString('vi-VN') + ' đ';
+
+                    const finalTotal = document.getElementById('cart-final-total');
+                    if (finalTotal) finalTotal.textContent = Number(data.totalAmount).toLocaleString('vi-VN') + ' đ';
+
+                    const totalCount = document.getElementById('cart-total-count');
+                    if (totalCount) totalCount.textContent = data.cartCount;
+
+                    const navBadge = document.querySelector('.nav-cart-badge');
+                    if (navBadge) navBadge.textContent = data.cartCount;
+
+                    const btnPlus = document.getElementById(`btn-plus-${productId}`);
+                    if (btnPlus) btnPlus.disabled = (data.itemQuantity >= maxStock);
+                }
+            })
+            .catch(err => console.error(err));
+        }
+
         function changeCartQtyAjax(productId, delta, maxStock) {
             const qtyInput = document.getElementById(`item-qty-${productId}`);
             if (!qtyInput) return;

@@ -78,6 +78,17 @@ using (var scope = app.Services.CreateScope())
     DbSeeder.SeedSampleDataAsync(context).GetAwaiter().GetResult();
     DbSeeder.FixVietnameseEncoding(context);
     DbSeeder.SeedIdentityAsync(scope.ServiceProvider).GetAwaiter().GetResult();
+
+    var userMgr = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+    var signInMgr = scope.ServiceProvider.GetRequiredService<SignInManager<ApplicationUser>>();
+    var u = userMgr.FindByNameAsync("nguyenvana").GetAwaiter().GetResult();
+    if (u != null) {
+        var pwCheck = userMgr.CheckPasswordAsync(u, "123456").GetAwaiter().GetResult();
+        var siCheck = signInMgr.CheckPasswordSignInAsync(u, "123456", false).GetAwaiter().GetResult();
+        Console.WriteLine($"[DIAGNOSTIC] nguyenvana CheckPassword: {pwCheck}, SignIn: {siCheck.Succeeded}, NotAllowed: {siCheck.IsNotAllowed}, LockedOut: {siCheck.IsLockedOut}");
+    } else {
+        Console.WriteLine("[DIAGNOSTIC] nguyenvana is NULL!");
+    }
 }
 
 if (!app.Environment.IsDevelopment())

@@ -105,7 +105,7 @@
                                     <div class="d-flex align-items-center justify-content-sm-end gap-2">
                                         <div class="input-group input-group-sm" style="width: 100px;">
                                             <button class="btn btn-outline-secondary" type="button" @onclick="() => CartService.UpdateQuantity(item.ProductId, -1)">-</button>
-                                            <input type="text" class="form-control text-center fw-bold bg-white" readonly value="@item.Quantity" />
+                                            <input type="number" class="form-control text-center fw-bold bg-white" min="1" max="@item.StockQuantity" value="@item.Quantity" @onchange="(e) => OnQuantityChanged(item.ProductId, e, item.StockQuantity)" />
                                             <button class="btn btn-outline-secondary" type="button" 
                                                     @onclick="() => CartService.UpdateQuantity(item.ProductId, 1)" 
                                                     disabled="@(item.Quantity >= item.StockQuantity)">+</button>
@@ -182,6 +182,15 @@
 </div>
 
 @code {
+    private void OnQuantityChanged(int productId, ChangeEventArgs e, int maxStock)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int val))
+        {
+            if (val < 1) val = 1;
+            if (val > maxStock) val = maxStock;
+            CartService.UpdateQuantityExact(productId, val, maxStock);
+        }
+    }
     protected override void OnInitialized()
     {
         CartService.OnChange += StateHasChanged;

@@ -232,7 +232,7 @@
                                                 </button>
                                             </form>
                                         }
-                                        <a asp-controller="Checkout" asp-action="OrderSuccess" asp-route-id="@order.Id" class="btn btn-light btn-sm rounded-pill px-3 py-1 fw-semibold small border text-decoration-none">
+                                        <a asp-controller="Checkout" asp-action="OrderSuccess" asp-route-id="@order.Id" asp-route-phone="@ViewBag.PhoneNumber" class="btn btn-light btn-sm rounded-pill px-3 py-1 fw-semibold small border text-decoration-none">
                                             Xem chi tiết &rarr;
                                         </a>
                                     </div>

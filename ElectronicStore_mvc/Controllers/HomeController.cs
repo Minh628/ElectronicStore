@@ -35,14 +35,14 @@ public class HomeController : Controller
             .ToListAsync();
 
         var brands = await _context.Products
-            .Where(p => p.IsActive)
+            .Where(p => p.IsActive && p.Category.IsActive)
             .Select(p => p.Brand)
             .Distinct()
             .ToListAsync();
 
         var query = _context.Products
             .Include(p => p.Category)
-            .Where(p => p.IsActive);
+            .Where(p => p.IsActive && p.Category.IsActive);
 
         // Lọc theo danh mục
         if (CategoryId.HasValue && CategoryId.Value > 0)
@@ -114,7 +114,7 @@ public class HomeController : Controller
         {
             product = await _context.Products
                 .Include(p => p.Category)
-                .FirstOrDefaultAsync(p => p.IsActive);
+                .FirstOrDefaultAsync(p => p.IsActive && p.Category.IsActive);
         }
 
         if (product == null)
@@ -124,7 +124,7 @@ public class HomeController : Controller
 
         // 4 sản phẩm gợi ý cùng danh mục
         var relatedProducts = await _context.Products
-            .Where(p => p.CategoryId == product.CategoryId && p.Id != product.Id && p.IsActive)
+            .Where(p => p.CategoryId == product.CategoryId && p.Id != product.Id && p.IsActive && p.Category.IsActive)
             .Take(4)
             .ToListAsync();
 

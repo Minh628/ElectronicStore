@@ -52,7 +52,10 @@ public class MyOrdersModel : PageModel
             return;
         }
 
-        Orders = await query.OrderByDescending(o => o.OrderDate).ToListAsync();
+        var allOrders = await query.OrderByDescending(o => o.OrderDate).ToListAsync();
+        Orders = string.IsNullOrWhiteSpace(Status) || Status == "All"
+            ? allOrders
+            : allOrders.Where(o => NormalizeStatus(o.OrderStatus) == NormalizeStatus(Status)).ToList();
     }
 
     /// <summary>
@@ -138,4 +141,14 @@ public class MyOrdersModel : PageModel
         AlertType = "success";
         return RedirectToPage(new { LookupPhone, Status });
     }
+
+    private static string NormalizeStatus(string? status) => status switch
+    {
+        "Chờ xử lý" or "Pending" => "Pending",
+        "Đã duyệt" or "Confirmed" => "Confirmed",
+        "Đang giao" or "Đang giao hàng" or "Shipping" => "Shipping",
+        "Hoàn thành" or "Đã giao" or "Hoàn tất" or "Completed" => "Completed",
+        "Đã hủy" or "Cancelled" => "Cancelled",
+        _ => status ?? string.Empty
+    };
 }

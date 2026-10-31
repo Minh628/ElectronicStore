@@ -315,6 +315,13 @@ public class AdminController : Controller
     [HttpPost]
     public async Task<IActionResult> UpdateOrderStatus(int orderId, string status, string? currentStatus, string? search)
     {
+        status = NormalizeStatus(status);
+        if (status is not ("Pending" or "Confirmed" or "Shipping" or "Completed" or "Cancelled"))
+        {
+            TempData["ErrorMessage"] = "Trạng thái đơn hàng không hợp lệ.";
+            return RedirectToAction(nameof(Orders), new { status = currentStatus, search });
+        }
+
         var order = await _context.Orders
             .Include(o => o.OrderDetails)
             .FirstOrDefaultAsync(o => o.Id == orderId);

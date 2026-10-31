@@ -24,7 +24,7 @@ public interface IProductService
 
     // 4. Phục vụ quản lý đơn hàng
     List<Order> GetOrders(string? status = null);
-    Order? GetOrderById(int id, string? requesterUserId = null, bool requesterIsAdmin = false, int? guestOrderId = null);
+    Order? GetOrderById(int id, string? requesterUserId = null, bool requesterIsAdmin = false, int? guestOrderId = null, string? guestPhone = null);
     bool UpdateOrderStatus(int orderId, string status);
     (bool Success, string Message) CancelOrder(int orderId, bool isClient = true, string? requesterUserId = null, string? requesterPhone = null);
     (bool Success, string Message, int OrderId) PlaceOrder(string fullName, string phone, string email, string address, string paymentMethod, string? notes, List<CartItem> items, string? userId = null);

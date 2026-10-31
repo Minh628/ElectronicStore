@@ -436,7 +436,7 @@
     protected override void OnInitialized()
     {
         allProducts = ProductService.GetAllProducts();
-        categories = ProductService.GetCategories();
+        categories = ProductService.GetCategories().Where(c => c.IsActive).ToList();
         brands = allProducts.Select(p => p.Brand).Distinct().OrderBy(b => b).ToList();
 
         Navigation.LocationChanged += OnLocationChanged;

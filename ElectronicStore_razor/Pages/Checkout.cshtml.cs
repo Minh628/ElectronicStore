@@ -79,6 +79,12 @@ public class CheckoutModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
+        if (PaymentMethod is not ("COD" or "BankTransfer" or "VNPAY" or "MOMO"))
+        {
+            ErrorMessage = "Phương thức thanh toán không hợp lệ.";
+            return Page();
+        }
+
         CartItems = _cartService.GetCart();
         if (CartItems.Count == 0)
         {
@@ -108,6 +114,9 @@ public class CheckoutModel : PageModel
                 ErrorMessage = $"Sản phẩm '{prod.Name}' chỉ còn {prod.Quantity} chiếc trong kho (bạn đặt {item.Quantity} chiếc)!";
                 return Page();
             }
+
+            item.ProductName = prod.Name;
+            item.UnitPrice = prod.Price;
         }
 
         // 2. Xác định tài khoản đặt hàng (nếu đã đăng nhập thì liên kết UserId và cập nhật Profile)
@@ -151,7 +160,7 @@ public class CheckoutModel : PageModel
             ReceiverName = FullName.Trim(),
             ReceiverPhone = PhoneNumber.Trim(),
             OrderDate = DateTime.Now,
-            TotalAmount = TotalAmount,
+            TotalAmount = CartItems.Sum(item => item.TotalPrice),
             OrderStatus = "Pending",
             PaymentMethod = PaymentMethod,
             ShippingAddress = ShippingAddress.Trim(),

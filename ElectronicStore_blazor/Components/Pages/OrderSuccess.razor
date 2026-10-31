@@ -172,6 +172,9 @@
     [SupplyParameterFromQuery(Name = "id")]
     public int? Id { get; set; }
 
+    [SupplyParameterFromQuery(Name = "phone")]
+    public string? Phone { get; set; }
+
     private Order? order;
 
     protected override void OnInitialized()
@@ -183,7 +186,8 @@
                 targetId.Value,
                 UserService.CurrentUser?.Id,
                 UserService.IsAdmin,
-                UserService.IsAuthenticated ? null : Cart.LastGuestOrderId);
+                UserService.IsAuthenticated ? null : Cart.LastGuestOrderId,
+                UserService.IsAuthenticated ? null : Phone);
         }
     }
 }

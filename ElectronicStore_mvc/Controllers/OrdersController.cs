@@ -59,10 +59,20 @@ public class OrdersController : Controller
 
         var filtered = (status == "All" || string.IsNullOrEmpty(status))
             ? allOrders
-            : allOrders.Where(o => o.OrderStatus == status).ToList();
+            : allOrders.Where(o => NormalizeStatus(o.OrderStatus) == NormalizeStatus(status)).ToList();
 
         return View(filtered);
     }
+
+    private static string NormalizeStatus(string? status) => status switch
+    {
+        "Chờ xử lý" or "Pending" => "Pending",
+        "Đã duyệt" or "Confirmed" => "Confirmed",
+        "Đang giao" or "Đang giao hàng" or "Shipping" => "Shipping",
+        "Hoàn thành" or "Đã giao" or "Hoàn tất" or "Completed" => "Completed",
+        "Đã hủy" or "Cancelled" => "Cancelled",
+        _ => status ?? string.Empty
+    };
 
     /// <summary>
     /// Khách hàng hủy đơn hàng (Bảo mật kiểm tra quyền sở hữu IDOR & chỉ hủy khi Pending/Confirmed)

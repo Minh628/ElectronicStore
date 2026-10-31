@@ -234,7 +234,7 @@
                                                 </button>
                                             </form>
                                         }
-                                        <a asp-page="/OrderSuccess" asp-route-orderId="@order.Id" class="btn btn-light btn-sm rounded-pill px-3 py-1 fw-semibold small border text-decoration-none">
+                                        <a asp-page="/OrderSuccess" asp-route-orderId="@order.Id" asp-route-phone="@Model.LookupPhone" class="btn btn-light btn-sm rounded-pill px-3 py-1 fw-semibold small border text-decoration-none">
                                             Xem chi tiết &rarr;
                                         </a>
                                     </div>

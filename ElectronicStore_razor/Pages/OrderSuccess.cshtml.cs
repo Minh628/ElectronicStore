@@ -23,7 +23,7 @@ public class OrderSuccessModel : PageModel
     public Order? Order { get; set; }
 
     // Hỗ trợ nhận cả 2 dạng query string: ?orderId=123 hoặc ?id=123
-    public async Task<IActionResult> OnGetAsync(int? orderId, int? id)
+    public async Task<IActionResult> OnGetAsync(int? orderId, int? id, string? phone)
     {
         var targetId = orderId ?? id ?? 0;
         Order = await _context.Orders
@@ -37,7 +37,9 @@ public class OrderSuccessModel : PageModel
             var user = await _userManager.GetUserAsync(User);
             var ownsOrder = user != null
                 ? Order.UserId == user.Id
-                : Order.UserId == null && HttpContext.Session.GetInt32("LastGuestOrderId") == targetId;
+                : Order.UserId == null &&
+                  (HttpContext.Session.GetInt32("LastGuestOrderId") == targetId ||
+                   (!string.IsNullOrWhiteSpace(phone) && Order.ReceiverPhone == phone.Trim()));
             if (!ownsOrder)
             {
                 return NotFound();

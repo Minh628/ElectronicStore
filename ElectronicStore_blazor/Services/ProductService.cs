@@ -22,7 +22,8 @@ public class ProductService : IProductService
     public List<Product> GetAllProducts(int? categoryId = null, string? search = null)
     {
         using var context = _contextFactory.CreateDbContext();
-        var query = context.Products.Include(p => p.Category).Where(p => p.IsActive).AsQueryable();
+        var query = context.Products.Include(p => p.Category)
+            .Where(p => p.IsActive && p.Category.IsActive).AsQueryable();
 
         if (categoryId.HasValue && categoryId.Value > 0)
         {
@@ -41,7 +42,8 @@ public class ProductService : IProductService
     public Product? GetProductById(int id)
     {
         using var context = _contextFactory.CreateDbContext();
-        return context.Products.Include(p => p.Category).FirstOrDefault(p => p.Id == id);
+        return context.Products.Include(p => p.Category)
+            .FirstOrDefault(p => p.Id == id && p.IsActive && p.Category.IsActive);
     }
 
     public bool BuyProduct(int id)
@@ -196,7 +198,7 @@ public class ProductService : IProductService
         return query.OrderByDescending(o => o.OrderDate).ToList();
     }
 
-    public Order? GetOrderById(int id, string? requesterUserId = null, bool requesterIsAdmin = false, int? guestOrderId = null)
+    public Order? GetOrderById(int id, string? requesterUserId = null, bool requesterIsAdmin = false, int? guestOrderId = null, string? guestPhone = null)
     {
         using var context = _contextFactory.CreateDbContext();
         var query = context.Orders
@@ -212,11 +214,18 @@ public class ProductService : IProductService
 
         return query.FirstOrDefault(o =>
             (requesterUserId != null && o.UserId == requesterUserId) ||
-            (o.UserId == null && guestOrderId == o.Id));
+            (o.UserId == null && (guestOrderId == o.Id ||
+                                  (!string.IsNullOrWhiteSpace(guestPhone) && o.ReceiverPhone == guestPhone.Trim()))));
     }
 
     public bool UpdateOrderStatus(int orderId, string status)
     {
+        status = NormalizeStatus(status);
+        if (status is not ("Pending" or "Confirmed" or "Shipping" or "Completed" or "Cancelled"))
+        {
+            return false;
+        }
+
         using var context = _contextFactory.CreateDbContext();
         var order = context.Orders.Include(o => o.OrderDetails).FirstOrDefault(o => o.Id == orderId);
         if (order != null)
@@ -231,6 +240,18 @@ public class ProductService : IProductService
                     {
                         product.Quantity += detail.Quantity;
                     }
+
+                }
+            }
+            else if (order.OrderStatus == "Cancelled" && status != "Cancelled")
+            {
+                foreach (var detail in order.OrderDetails)
+                {
+                    var product = context.Products.Find(detail.ProductId);
+                    if (product != null)
+                    {
+                        product.Quantity = Math.Max(0, product.Quantity - detail.Quantity);
+                    }
                 }
             }
 
@@ -240,6 +261,16 @@ public class ProductService : IProductService
         }
         return false;
     }
+
+    private static string NormalizeStatus(string? status) => status switch
+    {
+        "Chờ xử lý" or "Pending" => "Pending",
+        "Đã duyệt" or "Confirmed" => "Confirmed",
+        "Đang giao" or "Đang giao hàng" or "Shipping" => "Shipping",
+        "Hoàn thành" or "Đã giao" or "Hoàn tất" or "Completed" => "Completed",
+        "Đã hủy" or "Cancelled" => "Cancelled",
+        _ => status ?? string.Empty
+    };
 
     public (bool Success, string Message) CancelOrder(int orderId, bool isClient = true, string? requesterUserId = null, string? requesterPhone = null)
     {
@@ -302,6 +333,11 @@ public class ProductService : IProductService
 
     public (bool Success, string Message, int OrderId) PlaceOrder(string fullName, string phone, string email, string address, string paymentMethod, string? notes, List<CartItem> items, string? userId = null)
     {
+        if (paymentMethod is not ("COD" or "BankTransfer" or "VNPAY" or "MOMO"))
+        {
+            return (false, "Phương thức thanh toán không hợp lệ.", 0);
+        }
+
         // 1. Kiểm tra thông tin người nhận
         if (string.IsNullOrWhiteSpace(fullName) || string.IsNullOrWhiteSpace(phone) || string.IsNullOrWhiteSpace(address))
         {
@@ -329,6 +365,9 @@ public class ProductService : IProductService
             {
                 return (false, $"Sản phẩm '{prod.Name}' chỉ còn {prod.Quantity} chiếc trong kho (bạn đặt {item.Quantity} chiếc)!", 0);
             }
+
+            item.ProductName = prod.Name;
+            item.UnitPrice = prod.Price;
         }
 
         // 4. Tạo đơn hàng mới liên kết trực tiếp với UserId và thông tin người nhận

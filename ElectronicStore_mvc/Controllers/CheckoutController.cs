@@ -57,6 +57,12 @@ public class CheckoutController : Controller
     [HttpPost]
     public async Task<IActionResult> Process(string fullName, string phoneNumber, string? email, string shippingAddress, string paymentMethod, string? notes)
     {
+        if (paymentMethod is not ("COD" or "BankTransfer" or "VNPAY" or "MOMO"))
+        {
+            TempData["ErrorMessage"] = "Phương thức thanh toán không hợp lệ.";
+            return RedirectToAction(nameof(Index));
+        }
+
         var cart = _cartService.GetCart();
         if (!cart.Any())
         {
@@ -101,6 +107,9 @@ public class CheckoutController : Controller
                 PreserveFormData();
                 return View("Index");
             }
+
+            item.ProductName = prod.Name;
+            item.UnitPrice = prod.Price;
         }
 
         // 2. Xác định tài khoản đặt hàng (nếu đã đăng nhập thì liên kết UserId và cập nhật Profile)
@@ -141,7 +150,7 @@ public class CheckoutController : Controller
         {
             UserId = currentUserId,
             OrderDate = DateTime.Now,
-            TotalAmount = _cartService.GetTotal(),
+            TotalAmount = cart.Sum(item => item.TotalPrice),
             OrderStatus = "Pending",
             PaymentMethod = paymentMethod ?? "COD",
             ReceiverName = fullName.Trim(),
@@ -184,7 +193,7 @@ public class CheckoutController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> OrderSuccess(int? id, int? orderId)
+    public async Task<IActionResult> OrderSuccess(int? id, int? orderId, string? phone)
     {
         int actualId = id ?? orderId ?? 0;
         var order = await _context.Orders
@@ -198,7 +207,9 @@ public class CheckoutController : Controller
             var user = await _userManager.GetUserAsync(User);
             var ownsOrder = user != null
                 ? order.UserId == user.Id
-                : order.UserId == null && HttpContext.Session.GetInt32("LastGuestOrderId") == actualId;
+                : order.UserId == null &&
+                  (HttpContext.Session.GetInt32("LastGuestOrderId") == actualId ||
+                   (!string.IsNullOrWhiteSpace(phone) && order.ReceiverPhone == phone.Trim()));
             if (!ownsOrder)
             {
                 return NotFound();

@@ -113,6 +113,14 @@ public class OrdersModel : PageModel
     /// </summary>
     public async Task<IActionResult> OnPostUpdateStatusAsync(int orderId, string newStatus)
     {
+        newStatus = NormalizeStatus(newStatus);
+        if (newStatus is not ("Pending" or "Confirmed" or "Shipping" or "Completed" or "Cancelled"))
+        {
+            AlertMessage = "Trạng thái đơn hàng không hợp lệ.";
+            AlertType = "danger";
+            return RedirectToPage(new { StatusFilter, SearchKeyword });
+        }
+
         var order = await _context.Orders
             .Include(o => o.OrderDetails)
             .FirstOrDefaultAsync(o => o.Id == orderId);
@@ -152,4 +160,5 @@ public class OrdersModel : PageModel
 
         return RedirectToPage(new { StatusFilter, SearchKeyword });
     }
+
 }

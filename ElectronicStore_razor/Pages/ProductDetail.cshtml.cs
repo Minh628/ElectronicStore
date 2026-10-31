@@ -30,20 +30,20 @@ public class ProductDetailModel : PageModel
         {
             Product = await _context.Products
                 .Include(p => p.Category)
-                .FirstOrDefaultAsync(p => p.Id == id.Value && p.IsActive);
+                .FirstOrDefaultAsync(p => p.Id == id.Value && p.IsActive && p.Category.IsActive);
         }
         else
         {
             Product = await _context.Products
                 .Include(p => p.Category)
-                .FirstOrDefaultAsync(p => p.IsActive);
+                .FirstOrDefaultAsync(p => p.IsActive && p.Category.IsActive);
         }
 
         if (Product != null)
         {
-            // Tải các sản phẩm liên quan cùng danh mục
+            // Tải các sản phẩm liên quan cùng danh mục đang hoạt động
             RelatedProducts = await _context.Products
-                .Where(p => p.CategoryId == Product.CategoryId && p.Id != Product.Id && p.IsActive)
+                .Where(p => p.CategoryId == Product.CategoryId && p.Id != Product.Id && p.IsActive && p.Category.IsActive)
                 .Take(4)
                 .ToListAsync();
         }

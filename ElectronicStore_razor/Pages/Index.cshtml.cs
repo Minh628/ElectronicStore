@@ -75,10 +75,11 @@ public class IndexModel : PageModel
             query = query.Where(p => p.CategoryId == CategoryId.Value);
         }
 
-        // Lọc theo hãng sản xuất
+        // Lọc theo hãng sản xuất (không phân biệt chữ hoa thường)
         if (!string.IsNullOrWhiteSpace(Brand))
         {
-            query = query.Where(p => p.Brand == Brand);
+            var brandLower = Brand.Trim().ToLower();
+            query = query.Where(p => p.Brand.ToLower() == brandLower);
         }
 
         // Tìm kiếm theo tên sản phẩm, thương hiệu hoặc thông số

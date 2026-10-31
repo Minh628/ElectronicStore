@@ -215,7 +215,16 @@ public class ProductService : IProductService
 
         if (!string.IsNullOrWhiteSpace(status))
         {
-            query = query.Where(o => o.OrderStatus == status);
+            var statusLower = status.Trim().ToLower();
+            query = statusLower switch
+            {
+                "pending" or "chờ xử lý" => query.Where(o => o.OrderStatus == "Pending" || o.OrderStatus == "Chờ xử lý"),
+                "confirmed" or "đã duyệt" => query.Where(o => o.OrderStatus == "Confirmed" || o.OrderStatus == "Đã duyệt"),
+                "shipping" or "đang giao" or "đang giao hàng" => query.Where(o => o.OrderStatus == "Shipping" || o.OrderStatus == "Đang giao" || o.OrderStatus == "Đang giao hàng"),
+                "completed" or "hoàn thành" or "đã giao" or "hoàn tất" => query.Where(o => o.OrderStatus == "Completed" || o.OrderStatus == "Hoàn thành" || o.OrderStatus == "Đã giao" || o.OrderStatus == "Hoàn tất"),
+                "cancelled" or "đã hủy" => query.Where(o => o.OrderStatus == "Cancelled" || o.OrderStatus == "Đã hủy"),
+                _ => query.Where(o => o.OrderStatus == status)
+            };
         }
 
         return query.OrderByDescending(o => o.OrderDate).ToList();

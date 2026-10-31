@@ -50,10 +50,11 @@ public class HomeController : Controller
             query = query.Where(p => p.CategoryId == CategoryId.Value);
         }
 
-        // Lọc theo hãng sản xuất
+        // Lọc theo hãng sản xuất (không phân biệt chữ hoa thường)
         if (!string.IsNullOrWhiteSpace(Brand))
         {
-            query = query.Where(p => p.Brand == Brand);
+            var brandLower = Brand.Trim().ToLower();
+            query = query.Where(p => p.Brand.ToLower() == brandLower);
         }
 
         // Tìm kiếm theo tên sản phẩm, thương hiệu hoặc thông số
@@ -104,12 +105,12 @@ public class HomeController : Controller
     {
         ElectronicStore_mvc.Models.Entities.Product? product = null;
 
-        // Nếu có id hợp lệ thì tìm theo id, ngược lại fallback lấy sản phẩm đầu tiên giống Blazor
+        // Nếu có id hợp lệ thì tìm theo id (kiểm tra cả sản phẩm và danh mục còn hoạt động)
         if (id.HasValue && id.Value > 0)
         {
             product = await _context.Products
                 .Include(p => p.Category)
-                .FirstOrDefaultAsync(p => p.Id == id.Value && p.IsActive);
+                .FirstOrDefaultAsync(p => p.Id == id.Value && p.IsActive && p.Category.IsActive);
         }
         else
         {

@@ -198,10 +198,19 @@ public class AdminController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> SaveCategory(Category category)
+    public async Task<IActionResult> SaveCategory(Category category, string? search)
     {
+        // Kiểm tra tính hợp lệ: Tên ngành hàng không được để trống
+        if (string.IsNullOrWhiteSpace(category.Name))
+        {
+            TempData["ErrorMessage"] = "Tên ngành hàng không được để trống!";
+            return RedirectToAction(nameof(Categories), new { search });
+        }
+
         if (category.Id == 0)
         {
+            category.Name = category.Name.Trim();
+            category.Description = category.Description?.Trim();
             category.IsActive = true;
             _context.Categories.Add(category);
             TempData["SuccessMessage"] = $"Đã thêm danh mục mới: {category.Name}";
@@ -217,11 +226,11 @@ public class AdminController : Controller
             }
         }
         await _context.SaveChangesAsync();
-        return RedirectToAction(nameof(Categories));
+        return RedirectToAction(nameof(Categories), new { search });
     }
 
     [HttpPost]
-    public async Task<IActionResult> DeleteCategory(int id)
+    public async Task<IActionResult> DeleteCategory(int id, string? search)
     {
         var category = await _context.Categories.Include(c => c.Products).FirstOrDefaultAsync(c => c.Id == id);
         if (category != null)
@@ -237,7 +246,7 @@ public class AdminController : Controller
                 TempData["SuccessMessage"] = $"Đã xóa danh mục '{category.Name}'.";
             }
         }
-        return RedirectToAction(nameof(Categories));
+        return RedirectToAction(nameof(Categories), new { search });
     }
     #endregion
 

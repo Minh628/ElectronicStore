@@ -429,7 +429,13 @@
             document.getElementById('modalOrderCode').textContent = data.code;
             document.getElementById('modalReceiverName').textContent = data.receiverName;
             document.getElementById('modalReceiverPhone').textContent = data.receiverPhone;
-            document.getElementById('modalPaymentMethod').textContent = data.paymentMethod;
+            const paymentMap = {
+                'COD': 'COD (Thanh toán khi nhận hàng)',
+                'BankTransfer': 'Chuyển khoản ngân hàng (VietQR)',
+                'VNPAY': 'Cổng thanh toán VNPAY',
+                'MOMO': 'Ví điện tử MoMo'
+            };
+            document.getElementById('modalPaymentMethod').textContent = paymentMap[data.paymentMethod] || data.paymentMethod || 'Chưa xác định';
             document.getElementById('modalOrderDate').textContent = data.orderDate;
             document.getElementById('modalShippingAddress').textContent = data.shippingAddress;
             document.getElementById('modalOrderNotes').textContent = data.notes || 'Không có ghi chú';

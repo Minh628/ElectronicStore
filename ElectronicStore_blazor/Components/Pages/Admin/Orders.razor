@@ -305,7 +305,7 @@
                         <div class="row g-2 small">
                             <div class="col-md-6"><strong>Người nhận:</strong> @(selectedOrder.ReceiverName ?? "—")</div>
                             <div class="col-md-6"><strong>Số điện thoại:</strong> @(selectedOrder.ReceiverPhone ?? "—")</div>
-                            <div class="col-md-6"><strong>Thanh toán:</strong> @selectedOrder.PaymentMethod</div>
+                            <div class="col-md-6"><strong>Thanh toán:</strong> @FormatPaymentMethod(selectedOrder.PaymentMethod)</div>
                             <div class="col-md-6"><strong>Ngày đặt:</strong> @selectedOrder.OrderDate.ToString("dd/MM/yyyy HH:mm")</div>
                             <div class="col-12"><strong>Địa chỉ giao:</strong> @selectedOrder.ShippingAddress</div>
                             @if (!string.IsNullOrWhiteSpace(selectedOrder.Notes))
@@ -435,6 +435,15 @@
         filteredOrders = query.ToList();
     }
 
+    private string FormatPaymentMethod(string? method) => method switch
+    {
+        "COD" => "COD (Thanh toán khi nhận hàng)",
+        "BankTransfer" => "Chuyển khoản ngân hàng (VietQR)",
+        "VNPAY" => "Cổng thanh toán VNPAY",
+        "MOMO" => "Ví điện tử MoMo",
+        _ => method ?? "Chưa xác định"
+    };
+
     private void OpenDetailModal(Order o)
     {
         selectedOrder = o;
@@ -443,7 +452,15 @@
     private void ChangeStatus(int orderId, string newStatus)
     {
         ProductService.UpdateOrderStatus(orderId, newStatus);
-        alertMessage = $"Đã cập nhật trạng thái đơn hàng #ES{orderId:D7} sang '{newStatus}'!";
+        var statusText = newStatus switch
+        {
+            "Confirmed" => "Đã duyệt",
+            "Shipping" => "Đang giao hàng",
+            "Completed" => "Hoàn thành",
+            "Cancelled" => "Đã hủy",
+            _ => newStatus
+        };
+        alertMessage = $"Đã cập nhật trạng thái đơn hàng #ES{orderId:D7} sang '{statusText}'!";
         alertType = "success";
         LoadOrders();
     }

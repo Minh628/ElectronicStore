@@ -53,7 +53,7 @@ public class CategoriesModel : PageModel
         {
             AlertMessage = "Tên danh mục không được để trống!";
             AlertType = "danger";
-            return RedirectToPage();
+            return RedirectToPage(new { SearchKeyword });
         }
 
         if (InputCategory.Id == 0)
@@ -76,7 +76,7 @@ public class CategoriesModel : PageModel
         }
 
         await _context.SaveChangesAsync();
-        return RedirectToPage();
+        return RedirectToPage(new { SearchKeyword });
     }
 
     public async Task<IActionResult> OnPostDeleteAsync(int id)
@@ -101,6 +101,6 @@ public class CategoriesModel : PageModel
             }
         }
 
-        return RedirectToPage();
+        return RedirectToPage(new { SearchKeyword });
     }
 }

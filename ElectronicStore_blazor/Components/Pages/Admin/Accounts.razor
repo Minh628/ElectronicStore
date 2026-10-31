@@ -441,13 +441,17 @@
 
     private async Task LoadUsers()
     {
-        users = UserManager.Users.OrderByDescending(u => u.CreatedAt).ToList();
-        userRoles.Clear();
-        foreach (var u in users)
+        // Thực thi trong khóa SemaphoreSlim của UserService để tránh xung đột với AdminLayout.RestoreSessionAsync
+        await UserService.ExecuteWithLockAsync(async userManager =>
         {
-            var roles = await UserManager.GetRolesAsync(u);
-            userRoles[u.Id] = roles.FirstOrDefault() ?? "Customer";
-        }
+            users = await userManager.Users.OrderByDescending(u => u.CreatedAt).ToListAsync();
+            userRoles.Clear();
+            foreach (var u in users)
+            {
+                var roles = await userManager.GetRolesAsync(u);
+                userRoles[u.Id] = roles.FirstOrDefault() ?? "Customer";
+            }
+        });
     }
 
     private void OpenCreateModal()
@@ -478,47 +482,55 @@
             return;
         }
 
-        var existing = await UserManager.FindByNameAsync(newUsername.Trim());
-        if (existing != null)
+        bool created = await UserService.ExecuteWithLockAsync(async userManager =>
         {
-            alertMessage = $"Tên đăng nhập '{newUsername}' đã tồn tại!";
-            alertType = "danger";
-            return;
+            var existing = await userManager.FindByNameAsync(newUsername.Trim());
+            if (existing != null)
+            {
+                alertMessage = $"Tên đăng nhập '{newUsername}' đã tồn tại!";
+                alertType = "danger";
+                return false;
+            }
+
+            var user = new ApplicationUser
+            {
+                UserName = newUsername.Trim(),
+                FullName = string.IsNullOrWhiteSpace(newFullName) ? newUsername.Trim() : newFullName.Trim(),
+                Email = string.IsNullOrWhiteSpace(newEmail) ? $"{newUsername.Trim()}@electrostore.vn" : newEmail.Trim(),
+                PhoneNumber = newPhone.Trim(),
+                Address = newAddress.Trim(),
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            var result = await userManager.CreateAsync(user, newPassword.Trim());
+            if (!result.Succeeded)
+            {
+                alertMessage = "Lỗi khi tạo tài khoản: " + string.Join("; ", result.Errors.Select(e => e.Description));
+                alertType = "danger";
+                return false;
+            }
+
+            var roleResult = await userManager.AddToRoleAsync(user, newRole);
+            if (!roleResult.Succeeded)
+            {
+                await userManager.DeleteAsync(user);
+                alertMessage = "Không thể gán vai trò cho tài khoản: " +
+                               string.Join("; ", roleResult.Errors.Select(e => e.Description));
+                alertType = "danger";
+                return false;
+            }
+
+            alertMessage = $"Đã tạo thành công tài khoản '{user.UserName}' với vai trò '{newRole}'!";
+            alertType = "success";
+            showCreateModal = false;
+            return true;
+        });
+
+        if (created)
+        {
+            await LoadUsers();
         }
-
-        var user = new ApplicationUser
-        {
-            UserName = newUsername.Trim(),
-            FullName = string.IsNullOrWhiteSpace(newFullName) ? newUsername.Trim() : newFullName.Trim(),
-            Email = newEmail.Trim(),
-            PhoneNumber = newPhone.Trim(),
-            Address = newAddress.Trim(),
-            IsActive = true,
-            CreatedAt = DateTime.UtcNow
-        };
-
-        var result = await UserManager.CreateAsync(user, newPassword.Trim());
-        if (!result.Succeeded)
-        {
-            alertMessage = "Lỗi khi tạo tài khoản: " + string.Join("; ", result.Errors.Select(e => e.Description));
-            alertType = "danger";
-            return;
-        }
-
-        var roleResult = await UserManager.AddToRoleAsync(user, newRole);
-        if (!roleResult.Succeeded)
-        {
-            await UserManager.DeleteAsync(user);
-            alertMessage = "Không thể gán vai trò cho tài khoản: " +
-                           string.Join("; ", roleResult.Errors.Select(e => e.Description));
-            alertType = "danger";
-            return;
-        }
-
-        alertMessage = $"Đã tạo thành công tài khoản '{user.UserName}' với vai trò '{newRole}'!";
-        alertType = "success";
-        showCreateModal = false;
-        await LoadUsers();
     }
 
     private void OpenEditModal(ApplicationUser user, string role)
@@ -551,26 +563,32 @@
             return;
         }
 
-        editingUser.FullName = editFullName.Trim();
-        editingUser.Email = editEmail.Trim();
-        editingUser.PhoneNumber = editPhone.Trim();
-        editingUser.Address = editAddress.Trim();
-
-        await UserManager.UpdateAsync(editingUser);
-
-        var currentRoles = await UserManager.GetRolesAsync(editingUser);
-        if (!currentRoles.Contains(editRole))
+        bool updated = await UserService.ExecuteWithLockAsync(async userManager =>
         {
-            await UserManager.RemoveFromRolesAsync(editingUser, currentRoles);
-            var roleResult = await UserManager.AddToRoleAsync(editingUser, editRole);
-            if (!roleResult.Succeeded)
+            editingUser.FullName = editFullName.Trim();
+            editingUser.Email = string.IsNullOrWhiteSpace(editEmail) ? $"{editingUser.UserName}@electrostore.vn" : editEmail.Trim();
+            editingUser.PhoneNumber = editPhone.Trim();
+            editingUser.Address = editAddress.Trim();
+
+            await userManager.UpdateAsync(editingUser);
+
+            var currentRoles = await userManager.GetRolesAsync(editingUser);
+            if (!currentRoles.Contains(editRole))
             {
-                alertMessage = "Không thể cập nhật vai trò: " +
-                               string.Join("; ", roleResult.Errors.Select(e => e.Description));
-                alertType = "danger";
-                return;
+                await userManager.RemoveFromRolesAsync(editingUser, currentRoles);
+                var roleResult = await userManager.AddToRoleAsync(editingUser, editRole);
+                if (!roleResult.Succeeded)
+                {
+                    alertMessage = "Không thể cập nhật vai trò: " +
+                                   string.Join("; ", roleResult.Errors.Select(e => e.Description));
+                    alertType = "danger";
+                    return false;
+                }
             }
-        }
+            return true;
+        });
+
+        if (!updated) return;
 
         alertMessage = $"Đã cập nhật thông tin tài khoản '{editingUser.UserName}'!";
         alertType = "success";
@@ -593,27 +611,30 @@
         using var context = DbFactory.CreateDbContext();
         bool hasOrders = await context.Orders.AnyAsync(o => o.UserId == user.Id);
 
-        if (hasOrders)
+        await UserService.ExecuteWithLockAsync(async userManager =>
         {
-            user.IsActive = false;
-            await UserManager.UpdateAsync(user);
-            alertMessage = $"Tài khoản '{user.UserName}' đã có lịch sử đơn hàng. Hệ thống đã tự động chuyển sang trạng thái KHÓA TÀI KHOẢN để bảo toàn dữ liệu kế toán & hóa đơn.";
-            alertType = "warning";
-        }
-        else
-        {
-            var res = await UserManager.DeleteAsync(user);
-            if (res.Succeeded)
+            if (hasOrders)
             {
-                alertMessage = $"Đã xóa vĩnh viễn tài khoản '{user.UserName}'.";
-                alertType = "success";
+                user.IsActive = false;
+                await userManager.UpdateAsync(user);
+                alertMessage = $"Tài khoản '{user.UserName}' đã có lịch sử đơn hàng. Hệ thống đã tự động chuyển sang trạng thái KHÓA TÀI KHOẢN để bảo toàn dữ liệu kế toán & hóa đơn.";
+                alertType = "warning";
             }
             else
             {
-                alertMessage = "Không thể xóa: " + string.Join("; ", res.Errors.Select(e => e.Description));
-                alertType = "danger";
+                var res = await userManager.DeleteAsync(user);
+                if (res.Succeeded)
+                {
+                    alertMessage = $"Đã xóa vĩnh viễn tài khoản '{user.UserName}'.";
+                    alertType = "success";
+                }
+                else
+                {
+                    alertMessage = "Không thể xóa: " + string.Join("; ", res.Errors.Select(e => e.Description));
+                    alertType = "danger";
+                }
             }
-        }
+        });
 
         await LoadUsers();
     }
@@ -627,18 +648,21 @@
             return;
         }
 
-        user.IsActive = !user.IsActive;
-        var result = await UserManager.UpdateAsync(user);
-        if (result.Succeeded)
+        await UserService.ExecuteWithLockAsync(async userManager =>
         {
-            alertMessage = $"Đã {(user.IsActive ? "MỞ KHÓA" : "KHÓA")} tài khoản {user.UserName}!";
-            alertType = user.IsActive ? "success" : "danger";
-        }
-        else
-        {
-            alertMessage = "Không thể cập nhật trạng thái tài khoản: " + string.Join("; ", result.Errors.Select(e => e.Description));
-            alertType = "danger";
-        }
+            user.IsActive = !user.IsActive;
+            var result = await userManager.UpdateAsync(user);
+            if (result.Succeeded)
+            {
+                alertMessage = $"Đã {(user.IsActive ? "MỞ KHÓA" : "KHÓA")} tài khoản {user.UserName}!";
+                alertType = user.IsActive ? "success" : "danger";
+            }
+            else
+            {
+                alertMessage = "Không thể cập nhật trạng thái tài khoản: " + string.Join("; ", result.Errors.Select(e => e.Description));
+                alertType = "danger";
+            }
+        });
         await LoadUsers();
     }
 }

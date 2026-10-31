@@ -70,7 +70,7 @@ public class CheckoutModel : PageModel
                 FullName = !string.IsNullOrWhiteSpace(user.FullName) ? user.FullName : (user.UserName ?? string.Empty);
                 PhoneNumber = user.PhoneNumber ?? string.Empty;
                 Email = user.Email;
-                ShippingAddress = user.Address ?? string.Empty;
+                ShippingAddress = user.Address == "Chưa cập nhật địa chỉ" ? string.Empty : (user.Address ?? string.Empty);
             }
         }
 
@@ -95,7 +95,7 @@ public class CheckoutModel : PageModel
 
         await using var transaction = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
 
-        if (string.IsNullOrWhiteSpace(FullName) || string.IsNullOrWhiteSpace(PhoneNumber) || string.IsNullOrWhiteSpace(ShippingAddress))
+        if (string.IsNullOrWhiteSpace(FullName) || string.IsNullOrWhiteSpace(PhoneNumber) || string.IsNullOrWhiteSpace(ShippingAddress) || ShippingAddress.Trim() == "Chưa cập nhật địa chỉ")
         {
             ErrorMessage = "Vui lòng điền đầy đủ Họ tên, Số điện thoại và Địa chỉ nhận hàng!";
             return Page();
@@ -142,7 +142,7 @@ public class CheckoutModel : PageModel
                     user.PhoneNumber = PhoneNumber.Trim();
                     userUpdated = true;
                 }
-                if (string.IsNullOrEmpty(user.Address))
+                if (string.IsNullOrEmpty(user.Address) || user.Address == "Chưa cập nhật địa chỉ")
                 {
                     user.Address = ShippingAddress.Trim();
                     userUpdated = true;

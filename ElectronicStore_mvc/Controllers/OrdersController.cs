@@ -43,7 +43,10 @@ public class OrdersController : Controller
             var user = await _userManager.GetUserAsync(User);
             if (user != null)
             {
-                query = query.Where(o => o.UserId == user.Id);
+                var userPhone = user.PhoneNumber?.Trim();
+                // Hiển thị cả đơn hàng đặt bằng tài khoản lẫn đơn đặt lúc chưa đăng nhập nhưng trùng SĐT tài khoản
+                query = query.Where(o => o.UserId == user.Id ||
+                                         (string.IsNullOrEmpty(o.UserId) && !string.IsNullOrEmpty(userPhone) && o.ReceiverPhone == userPhone));
             }
         }
         else
@@ -129,7 +132,8 @@ public class OrdersController : Controller
         }
 
         // 2. Kiểm tra điều kiện: chỉ hủy khi đơn chưa được chuyển sang Shipping hoặc Completed
-        if (order.OrderStatus != "Pending" && order.OrderStatus != "Confirmed")
+        var currentStatus = NormalizeStatus(order.OrderStatus);
+        if (currentStatus != "Pending" && currentStatus != "Confirmed")
         {
             TempData["ErrorMessage"] = "Đơn hàng đang giao hoặc đã hoàn tất/đã hủy, không thể hủy.";
             return RedirectToAction(nameof(MyOrders), new { phoneNumber, status });

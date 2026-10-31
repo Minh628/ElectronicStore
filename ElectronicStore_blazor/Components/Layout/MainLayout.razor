@@ -207,6 +207,28 @@
     {
         Cart.OnChange += StateHasChanged;
         UserService.OnChange += StateHasChanged;
+        Navigation.LocationChanged += OnLocationChanged;
+        SyncSearchFromUri(Navigation.Uri);
+    }
+
+    private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        SyncSearchFromUri(e.Location);
+        StateHasChanged();
+    }
+
+    private void SyncSearchFromUri(string uri)
+    {
+        try
+        {
+            var absoluteUri = Navigation.ToAbsoluteUri(uri);
+            var query = System.Web.HttpUtility.ParseQueryString(absoluteUri.Query);
+            navSearch = query["q"] ?? query["SearchKeyword"] ?? "";
+        }
+        catch
+        {
+            navSearch = "";
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -239,6 +261,7 @@
 
     private async Task HandleLogout()
     {
+        Cart.LastGuestOrderId = null;
         await UserService.LogoutAsync(JS);
         Navigation.NavigateTo("", true);
     }
@@ -247,5 +270,6 @@
     {
         Cart.OnChange -= StateHasChanged;
         UserService.OnChange -= StateHasChanged;
+        Navigation.LocationChanged -= OnLocationChanged;
     }
 }

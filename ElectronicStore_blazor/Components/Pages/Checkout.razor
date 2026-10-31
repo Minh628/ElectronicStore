@@ -303,7 +303,7 @@
             fullName = user.FullName ?? user.UserName ?? "Khách hàng";
             phoneNumber = user.PhoneNumber ?? "";
             email = user.Email ?? "";
-            shippingAddress = user.Address ?? "";
+            shippingAddress = user.Address == "Chưa cập nhật địa chỉ" ? "" : (user.Address ?? "");
         }
     }
 
@@ -321,7 +321,7 @@
                     fullName = user.FullName ?? user.UserName ?? "Khách hàng";
                     phoneNumber = user.PhoneNumber ?? "";
                     email = user.Email ?? "";
-                    shippingAddress = user.Address ?? "";
+                    shippingAddress = user.Address == "Chưa cập nhật địa chỉ" ? "" : (user.Address ?? "");
                 }
             }
             StateHasChanged();
@@ -330,7 +330,7 @@
 
     private async Task HandleSubmitOrder()
     {
-        if (string.IsNullOrWhiteSpace(fullName) || string.IsNullOrWhiteSpace(phoneNumber) || string.IsNullOrWhiteSpace(shippingAddress))
+        if (string.IsNullOrWhiteSpace(fullName) || string.IsNullOrWhiteSpace(phoneNumber) || string.IsNullOrWhiteSpace(shippingAddress) || shippingAddress.Trim() == "Chưa cập nhật địa chỉ")
         {
             errorMessage = "Vui lòng nhập đầy đủ Họ tên, Số điện thoại và Địa chỉ giao hàng!";
             return;
@@ -340,6 +340,14 @@
         var result = ProductService.PlaceOrder(fullName, phoneNumber, email, shippingAddress, paymentMethod, notes, Cart.Items, userId);
         if (result.Success)
         {
+            if (UserService.IsAuthenticated && UserService.CurrentUser != null)
+            {
+                var currentUser = UserService.CurrentUser;
+                if (string.IsNullOrWhiteSpace(currentUser.FullName)) currentUser.FullName = fullName.Trim();
+                if (string.IsNullOrWhiteSpace(currentUser.PhoneNumber)) currentUser.PhoneNumber = phoneNumber.Trim();
+                if (string.IsNullOrWhiteSpace(currentUser.Address) || currentUser.Address == "Chưa cập nhật địa chỉ") currentUser.Address = shippingAddress.Trim();
+                UserService.UpdateCurrentUser(currentUser);
+            }
             Cart.LastGuestOrderId = result.OrderId;
             try
             {

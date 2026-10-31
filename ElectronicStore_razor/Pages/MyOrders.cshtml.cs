@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
@@ -9,13 +10,16 @@ namespace ElectronicStore_razor.Pages;
 public class MyOrdersModel : PageModel
 {
     private readonly ElectronicStoreDbContext _context;
+    private readonly UserManager<ApplicationUser> _userManager;
 
-    public MyOrdersModel(ElectronicStoreDbContext context)
+    public MyOrdersModel(ElectronicStoreDbContext context, UserManager<ApplicationUser> userManager)
     {
         _context = context;
+        _userManager = userManager;
     }
 
     public List<Order> Orders { get; set; } = new();
+    public List<Order> AllOrders { get; set; } = new();
 
     [BindProperty(SupportsGet = true)]
     public string? LookupPhone { get; set; }
@@ -43,16 +47,30 @@ public class MyOrdersModel : PageModel
         }
         else if (User.Identity != null && User.Identity.IsAuthenticated)
         {
-            var username = User.Identity.Name;
-            query = query.Where(o => o.User != null && o.User.UserName == username);
+            var user = await _userManager.GetUserAsync(User);
+            if (user != null)
+            {
+                var userPhone = user.PhoneNumber?.Trim();
+                // Hiển thị cả đơn hàng đặt bằng tài khoản lẫn đơn đặt lúc chưa đăng nhập nhưng trùng SĐT tài khoản
+                query = query.Where(o => o.UserId == user.Id ||
+                                         (string.IsNullOrEmpty(o.UserId) && !string.IsNullOrEmpty(userPhone) && o.ReceiverPhone == userPhone));
+            }
+            else
+            {
+                Orders = new List<Order>();
+                AllOrders = new List<Order>();
+                return;
+            }
         }
         else
         {
             Orders = new List<Order>();
+            AllOrders = new List<Order>();
             return;
         }
 
         var allOrders = await query.OrderByDescending(o => o.OrderDate).ToListAsync();
+        AllOrders = allOrders;
         Orders = string.IsNullOrWhiteSpace(Status) || Status == "All"
             ? allOrders
             : allOrders.Where(o => NormalizeStatus(o.OrderStatus) == NormalizeStatus(Status)).ToList();
@@ -84,8 +102,11 @@ public class MyOrdersModel : PageModel
         // Kiểm tra quyền thao tác (Bảo mật chống tấn công IDOR)
         if (User.Identity != null && User.Identity.IsAuthenticated)
         {
-            bool isOwner = order.User?.UserName == User.Identity.Name ||
-                           (string.IsNullOrEmpty(order.UserId) && !string.IsNullOrWhiteSpace(LookupPhone) && order.ReceiverPhone == LookupPhone.Trim());
+            var currentUser = await _userManager.GetUserAsync(User);
+            var effectivePhone = !string.IsNullOrWhiteSpace(LookupPhone) ? LookupPhone.Trim() : currentUser?.PhoneNumber?.Trim();
+            bool isOwner = currentUser != null &&
+                           (order.UserId == currentUser.Id ||
+                            (string.IsNullOrEmpty(order.UserId) && !string.IsNullOrWhiteSpace(effectivePhone) && order.ReceiverPhone == effectivePhone));
             if (!isOwner)
             {
                 AlertMessage = "Bạn không có quyền thao tác trên đơn hàng này!";
@@ -119,7 +140,8 @@ public class MyOrdersModel : PageModel
         }
 
         // Kiểm tra điều kiện: Chưa tới bước giao hàng (Shipping)
-        if (order.OrderStatus != "Pending" && order.OrderStatus != "Confirmed")
+        var currentStatus = NormalizeStatus(order.OrderStatus);
+        if (currentStatus != "Pending" && currentStatus != "Confirmed")
         {
             AlertMessage = "Đơn hàng đã được chuyển sang giao hàng hoặc hoàn thành, bạn không thể hủy nữa!";
             AlertType = "warning";
@@ -144,7 +166,7 @@ public class MyOrdersModel : PageModel
         return RedirectToPage(new { LookupPhone, Status });
     }
 
-    private static string NormalizeStatus(string? status) => status switch
+    public static string NormalizeStatus(string? status) => status switch
     {
         "Chờ xử lý" or "Pending" => "Pending",
         "Đã duyệt" or "Confirmed" => "Confirmed",

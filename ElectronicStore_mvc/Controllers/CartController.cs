@@ -18,11 +18,18 @@ public class CartController : Controller
     }
 
     /// <summary>
-    /// Hiển thị trang giỏ hàng
+    /// Hiển thị trang giỏ hàng và đồng bộ tồn kho/đơn giá thực tế từ Database
     /// </summary>
-    public IActionResult Index()
+    public async Task<IActionResult> Index()
     {
         var cart = _cartService.GetCart();
+        if (cart.Count > 0)
+        {
+            var productIds = cart.Select(c => c.ProductId).ToList();
+            var dbProducts = await _context.Products.Include(p => p.Category).Where(p => productIds.Contains(p.Id)).ToListAsync();
+            _cartService.SyncWithProducts(dbProducts);
+            cart = _cartService.GetCart();
+        }
         ViewBag.TotalAmount = _cartService.GetTotal();
         ViewBag.CartCount = _cartService.GetCount();
         return View(cart);
@@ -34,8 +41,8 @@ public class CartController : Controller
     [HttpPost]
     public async Task<IActionResult> AddToCart(int productId, int quantity = 1)
     {
-        var product = await _context.Products.FindAsync(productId);
-        if (product == null || !product.IsActive)
+        var product = await _context.Products.Include(p => p.Category).FirstOrDefaultAsync(p => p.Id == productId);
+        if (product == null || !product.IsActive || (product.Category != null && !product.Category.IsActive))
         {
             return Json(new { success = false, message = "Sản phẩm không tồn tại hoặc đã ngừng kinh doanh!" });
         }
@@ -55,8 +62,8 @@ public class CartController : Controller
     [HttpPost]
     public async Task<IActionResult> UpdateQuantity(int productId, int quantity)
     {
-        var product = await _context.Products.FindAsync(productId);
-        int maxStock = product?.Quantity ?? 99;
+        var product = await _context.Products.Include(p => p.Category).FirstOrDefaultAsync(p => p.Id == productId);
+        int maxStock = (product != null && product.IsActive && (product.Category == null || product.Category.IsActive)) ? product.Quantity : 0;
 
         _cartService.UpdateQuantity(productId, quantity, maxStock);
 

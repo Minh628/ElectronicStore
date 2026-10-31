@@ -82,8 +82,8 @@ public class AccountsModel : PageModel
         var user = new ApplicationUser
         {
             UserName = username.Trim(),
-            FullName = fullName?.Trim() ?? username.Trim(),
-            Email = email?.Trim(),
+            FullName = string.IsNullOrWhiteSpace(fullName) ? username.Trim() : fullName.Trim(),
+            Email = string.IsNullOrWhiteSpace(email) ? $"{username.Trim()}@electrostore.vn" : email.Trim(),
             PhoneNumber = phone?.Trim(),
             Address = address?.Trim(),
             IsActive = true,

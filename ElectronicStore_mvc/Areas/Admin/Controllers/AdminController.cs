@@ -59,7 +59,7 @@ public class AdminController : Controller
         if (currentPage < 1) currentPage = 1;
         if (currentPage > totalPages) currentPage = totalPages;
 
-        ViewBag.Categories = await _context.Categories.Where(c => c.IsActive).ToListAsync();
+        ViewBag.Categories = await _context.Categories.OrderBy(c => c.Name).ToListAsync();
         ViewBag.SelectedCategoryId = categoryId;
         ViewBag.Search = search;
         ViewBag.TotalCount = totalCount;
@@ -75,15 +75,20 @@ public class AdminController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> SaveProduct(Product product, IFormFile? imageFile)
+    public async Task<IActionResult> SaveProduct(Product product, IFormFile? imageFile, int? filterCategoryId, int? categoryId, string? search, int currentPage = 1)
     {
+        if (string.IsNullOrWhiteSpace(product.Name) || product.Price <= 0 || product.Quantity < 0 || product.CategoryId <= 0)
+        {
+            TempData["ErrorMessage"] = "Vui lòng nhập đầy đủ Tên, Danh mục, Đơn giá (> 0) và Tồn kho hợp lệ!";
+            return RedirectToAction(nameof(Products), new { categoryId = filterCategoryId, search, currentPage });
+        }
         // Xử lý upload ảnh từ máy tính (Desktop) nếu người dùng chọn file
         if (imageFile != null && imageFile.Length > 0)
         {
             if (imageFile.Length > 5 * 1024 * 1024)
             {
                 TempData["ErrorMessage"] = "Ảnh sản phẩm không được vượt quá 5 MB.";
-                return RedirectToAction(nameof(Products));
+                return RedirectToAction(nameof(Products), new { categoryId = filterCategoryId, search, currentPage });
             }
 
             var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
@@ -91,7 +96,7 @@ public class AdminController : Controller
             if (!allowedExtensions.Contains(extension))
             {
                 TempData["ErrorMessage"] = "Chỉ chấp nhận ảnh JPG, JPEG, PNG hoặc WEBP.";
-                return RedirectToAction(nameof(Products));
+                return RedirectToAction(nameof(Products), new { categoryId = filterCategoryId, search, currentPage });
             }
 
             var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "products");
@@ -134,11 +139,11 @@ public class AdminController : Controller
             }
         }
         await _context.SaveChangesAsync();
-        return RedirectToAction(nameof(Products));
+        return RedirectToAction(nameof(Products), new { categoryId = filterCategoryId, search, currentPage });
     }
 
     [HttpPost]
-    public async Task<IActionResult> DeleteProduct(int id)
+    public async Task<IActionResult> DeleteProduct(int id, int? categoryId, int? filterCategoryId, string? search, int currentPage = 1)
     {
         var prod = await _context.Products.FindAsync(id);
         if (prod != null)
@@ -160,7 +165,7 @@ public class AdminController : Controller
                 TempData["SuccessMessage"] = $"Đã xóa vĩnh viễn thiết bị '{prod.Name}'.";
             }
         }
-        return RedirectToAction(nameof(Products));
+        return RedirectToAction(nameof(Products), new { categoryId = filterCategoryId, search, currentPage });
     }
 
     [HttpPost]
@@ -329,7 +334,8 @@ public class AdminController : Controller
         if (order != null)
         {
             // 1. Nếu chuyển sang Cancelled mà trước đó chưa phải Cancelled -> hoàn lại tồn kho
-            if (status == "Cancelled" && order.OrderStatus != "Cancelled")
+            var previousStatus = NormalizeStatus(order.OrderStatus);
+            if (status == "Cancelled" && previousStatus != "Cancelled")
             {
                 foreach (var d in order.OrderDetails)
                 {
@@ -341,7 +347,7 @@ public class AdminController : Controller
                 }
             }
             // 2. Nếu từ Cancelled đổi lại trạng thái khác -> trừ lại kho
-            else if (order.OrderStatus == "Cancelled" && status != "Cancelled")
+            else if (previousStatus == "Cancelled" && status != "Cancelled")
             {
                 foreach (var d in order.OrderDetails)
                 {
@@ -409,8 +415,8 @@ public class AdminController : Controller
         var user = new ApplicationUser
         {
             UserName = username.Trim(),
-            FullName = fullName?.Trim() ?? username.Trim(),
-            Email = email?.Trim(),
+            FullName = string.IsNullOrWhiteSpace(fullName) ? username.Trim() : fullName.Trim(),
+            Email = string.IsNullOrWhiteSpace(email) ? $"{username.Trim()}@electrostore.vn" : email.Trim(),
             PhoneNumber = phone?.Trim(),
             Address = address?.Trim(),
             IsActive = true,

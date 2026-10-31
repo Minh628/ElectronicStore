@@ -70,7 +70,6 @@ public class ProductService : IProductService
     public void AddProduct(Product product)
     {
         using var context = _contextFactory.CreateDbContext();
-        product.IsActive = true;
         if (product.CategoryId == 0) product.CategoryId = 1;
         if (string.IsNullOrWhiteSpace(product.Brand)) product.Brand = "Chính Hãng";
         context.Products.Add(product);
@@ -97,6 +96,29 @@ public class ProductService : IProductService
             return true;
         }
         return false;
+    }
+
+    public (bool Success, bool SoftDeleted, string ProductName) DeleteProductWithStatus(int id)
+    {
+        using var context = _contextFactory.CreateDbContext();
+        var product = context.Products.Include(p => p.OrderDetails).FirstOrDefault(p => p.Id == id);
+        if (product != null)
+        {
+            var prodName = product.Name;
+            if (product.OrderDetails.Any())
+            {
+                product.IsActive = false;
+                context.SaveChanges();
+                return (true, true, prodName);
+            }
+            else
+            {
+                context.Products.Remove(product);
+                context.SaveChanges();
+                return (true, false, prodName);
+            }
+        }
+        return (false, false, string.Empty);
     }
 
     public bool DeleteProduct(int id)
@@ -231,8 +253,9 @@ public class ProductService : IProductService
         var order = context.Orders.Include(o => o.OrderDetails).FirstOrDefault(o => o.Id == orderId);
         if (order != null)
         {
+            var previousStatus = NormalizeStatus(order.OrderStatus);
             // Nếu chuyển trạng thái sang Cancelled từ trạng thái khác -> hoàn lại kho
-            if (status == "Cancelled" && order.OrderStatus != "Cancelled")
+            if (status == "Cancelled" && previousStatus != "Cancelled")
             {
                 foreach (var detail in order.OrderDetails)
                 {
@@ -244,7 +267,7 @@ public class ProductService : IProductService
 
                 }
             }
-            else if (order.OrderStatus == "Cancelled" && status != "Cancelled")
+            else if (previousStatus == "Cancelled" && status != "Cancelled")
             {
                 foreach (var detail in order.OrderDetails)
                 {
@@ -308,13 +331,15 @@ public class ProductService : IProductService
             }
         }
 
+        var currentStatus = NormalizeStatus(order.OrderStatus);
+
         // Khách hàng chỉ được hủy trước khi Admin giao hàng (Pending hoặc Confirmed)
-        if (isClient && order.OrderStatus != "Pending" && order.OrderStatus != "Confirmed")
+        if (isClient && currentStatus != "Pending" && currentStatus != "Confirmed")
         {
             return (false, "Đơn hàng đang trong quá trình vận chuyển hoặc đã hoàn tất, không thể hủy!");
         }
 
-        if (order.OrderStatus == "Cancelled")
+        if (currentStatus == "Cancelled")
         {
             return (false, "Đơn hàng này đã được hủy trước đó!");
         }
@@ -342,9 +367,9 @@ public class ProductService : IProductService
         }
 
         // 1. Kiểm tra thông tin người nhận
-        if (string.IsNullOrWhiteSpace(fullName) || string.IsNullOrWhiteSpace(phone) || string.IsNullOrWhiteSpace(address))
+        if (string.IsNullOrWhiteSpace(fullName) || string.IsNullOrWhiteSpace(phone) || string.IsNullOrWhiteSpace(address) || address.Trim() == "Chưa cập nhật địa chỉ")
         {
-            return (false, "Vui lòng nhập đầy đủ Họ tên, Số điện thoại và Địa chỉ giao hàng!", 0);
+            return (false, "Vui lòng nhập đầy đủ Họ tên, Số điện thoại và Địa chỉ giao hàng hợp lệ!", 0);
         }
 
         // 2. Kiểm tra giỏ hàng
@@ -373,7 +398,28 @@ public class ProductService : IProductService
             item.UnitPrice = prod.Price;
         }
 
-        // 4. Tạo đơn hàng mới liên kết trực tiếp với UserId và thông tin người nhận
+        // 4. Nếu người dùng đã đăng nhập, đồng bộ bổ sung FullName, PhoneNumber, Address nếu còn thiếu
+        if (!string.IsNullOrEmpty(userId))
+        {
+            var dbUser = context.Users.Find(userId);
+            if (dbUser != null)
+            {
+                if (string.IsNullOrWhiteSpace(dbUser.FullName))
+                {
+                    dbUser.FullName = fullName.Trim();
+                }
+                if (string.IsNullOrWhiteSpace(dbUser.PhoneNumber))
+                {
+                    dbUser.PhoneNumber = phone.Trim();
+                }
+                if (string.IsNullOrWhiteSpace(dbUser.Address) || dbUser.Address == "Chưa cập nhật địa chỉ")
+                {
+                    dbUser.Address = address.Trim();
+                }
+            }
+        }
+
+        // Tạo đơn hàng mới liên kết trực tiếp với UserId và thông tin người nhận
         var order = new Order
         {
             UserId = userId,

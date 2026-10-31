@@ -106,7 +106,7 @@
                     <div class="d-flex align-items-center gap-3">
                         <div class="input-group" style="width: 130px;">
                             <button class="btn btn-outline-secondary" type="button" @onclick="DecreaseQuantity" disabled="@(quantity <= 1)">-</button>
-                            <input type="number" class="form-control text-center fw-bold bg-white" min="1" max="@(product?.Quantity ?? 99)" value="@quantity" @onchange="OnQuantityInputChanged" />
+                            <input type="number" class="form-control text-center fw-bold bg-white" min="1" max="@product.Quantity" value="@quantity" @onchange="OnQuantityInputChanged" />
                             <button class="btn btn-outline-secondary" type="button" @onclick="IncreaseQuantity" disabled="@(quantity >= product.Quantity)">+</button>
                         </div>
                         <div class="small fw-semibold @(product.Quantity > 0 ? "text-success" : "text-danger")">

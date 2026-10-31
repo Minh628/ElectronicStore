@@ -15,6 +15,7 @@ public interface IProductService
     void AddProduct(Product product);
     bool UpdateProduct(Product product);
     bool DeleteProduct(int id);
+    (bool Success, bool SoftDeleted, string ProductName) DeleteProductWithStatus(int id);
     bool ToggleProductActive(int id);
 
     // 3. Phục vụ quản trị danh mục

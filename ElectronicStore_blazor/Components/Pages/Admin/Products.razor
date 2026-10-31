@@ -553,9 +553,9 @@
 
     private void SaveProduct()
     {
-        if (string.IsNullOrWhiteSpace(inputProduct.Name))
+        if (string.IsNullOrWhiteSpace(inputProduct.Name) || inputProduct.Price <= 0 || inputProduct.Quantity < 0)
         {
-            alertMessage = "Vui lòng nhập tên thiết bị!";
+            alertMessage = "Vui lòng nhập đầy đủ Tên thiết bị, Đơn giá (> 0) và Số lượng tồn kho hợp lệ!";
             alertType = "danger";
             return;
         }
@@ -596,9 +596,20 @@
         bool confirmed = await JS.InvokeAsync<bool>("confirm", "Bạn có chắc chắn muốn xóa thiết bị này khỏi hệ thống?");
         if (!confirmed) return;
 
-        ProductService.DeleteProduct(id);
-        alertMessage = "Đã cập nhật danh sách thiết bị thành công!";
-        alertType = "success";
+        var res = ProductService.DeleteProductWithStatus(id);
+        if (res.Success)
+        {
+            if (res.SoftDeleted)
+            {
+                alertMessage = $"Thiết bị '{res.ProductName}' đã có lịch sử đơn hàng. Hệ thống đã tự động chuyển sang trạng thái TẠM ẨN / NGỪNG KINH DOANH.";
+                alertType = "warning";
+            }
+            else
+            {
+                alertMessage = $"Đã xóa vĩnh viễn thiết bị '{res.ProductName}'.";
+                alertType = "success";
+            }
+        }
         LoadProducts();
     }
 }

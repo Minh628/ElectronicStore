@@ -1,9 +1,22 @@
 @model List<ElectronicStore_mvc.Models.Entities.Order>
+@inject Microsoft.AspNetCore.Identity.UserManager<ElectronicStore_mvc.Models.Entities.ApplicationUser> UserManager
 @{
     ViewData["Title"] = "Đơn Hàng Của Tôi";
+    var currentUser = (User.Identity != null && User.Identity.IsAuthenticated) ? await UserManager.GetUserAsync(User) : null;
+    var userFullName = !string.IsNullOrWhiteSpace(currentUser?.FullName) ? currentUser.FullName : (User.Identity?.Name ?? "Khách vãng lai");
+    var userSubText = (User.Identity != null && User.Identity.IsAuthenticated) ? (!string.IsNullOrWhiteSpace(currentUser?.Email) ? currentUser.Email : "Thành viên chính thức") : (!string.IsNullOrEmpty(ViewBag.PhoneNumber as string) ? (string)ViewBag.PhoneNumber : "Chưa đăng nhập");
     string? phoneNumber = ViewBag.PhoneNumber;
     string activeStatus = ViewBag.Status as string ?? "All";
     var allOrders = ViewBag.AllOrders as List<ElectronicStore_mvc.Models.Entities.Order> ?? Model ?? new();
+    string NormalizeStatus(string? s) => s switch
+    {
+        "Chờ xử lý" or "Pending" => "Pending",
+        "Đã duyệt" or "Confirmed" => "Confirmed",
+        "Đang giao" or "Đang giao hàng" or "Shipping" => "Shipping",
+        "Hoàn thành" or "Đã giao" or "Hoàn tất" or "Completed" => "Completed",
+        "Đã hủy" or "Cancelled" => "Cancelled",
+        _ => s ?? string.Empty
+    };
 }
 
 <div class="container py-3">
@@ -25,16 +38,16 @@
                     <div class="rounded-circle d-flex align-items-center justify-content-center text-primary fw-bold fs-5"
                          style="width: 52px; height: 52px; background: #eff6ff; border: 2px solid #bfdbfe;">
                         @{
-                            var displayName = User.Identity?.Name ?? (!string.IsNullOrEmpty(phoneNumber) ? phoneNumber : "KH");
+                            var displayName = (User.Identity?.IsAuthenticated == true ? userFullName : (!string.IsNullOrEmpty(phoneNumber) ? phoneNumber : "KH"));
                             var initial = displayName.Length >= 2 ? displayName.Substring(0, 2).ToUpper() : displayName.ToUpper();
                         }
                         @initial
                     </div>
                     <div class="overflow-hidden">
                         <h6 class="fw-bold text-dark mb-0 text-truncate">
-                            @(User.Identity?.IsAuthenticated == true ? User.Identity.Name : "Khách vãng lai")
+                            @(User.Identity?.IsAuthenticated == true ? userFullName : "Khách vãng lai")
                         </h6>
-                        <span class="small text-secondary">@(User.Identity?.IsAuthenticated == true ? "Thành viên" : (!string.IsNullOrEmpty(phoneNumber) ? phoneNumber : "Chưa đăng nhập"))</span>
+                        <span class="small text-secondary">@userSubText</span>
                     </div>
                 </div>
 
@@ -117,23 +130,23 @@
                 </a>
                 <a asp-controller="Orders" asp-action="MyOrders" asp-route-phoneNumber="@phoneNumber" asp-route-status="Pending"
                    class="category-tab-btn text-decoration-none @(activeStatus == "Pending" ? "active" : "")">
-                    Chờ duyệt (@allOrders.Count(o => o.OrderStatus == "Pending"))
+                    Chờ duyệt (@allOrders.Count(o => NormalizeStatus(o.OrderStatus) == "Pending"))
                 </a>
                 <a asp-controller="Orders" asp-action="MyOrders" asp-route-phoneNumber="@phoneNumber" asp-route-status="Confirmed"
                    class="category-tab-btn text-decoration-none @(activeStatus == "Confirmed" ? "active" : "")">
-                    Đã duyệt (@allOrders.Count(o => o.OrderStatus == "Confirmed"))
+                    Đã duyệt (@allOrders.Count(o => NormalizeStatus(o.OrderStatus) == "Confirmed"))
                 </a>
                 <a asp-controller="Orders" asp-action="MyOrders" asp-route-phoneNumber="@phoneNumber" asp-route-status="Shipping"
                    class="category-tab-btn text-decoration-none @(activeStatus == "Shipping" ? "active" : "")">
-                    Đang giao (@allOrders.Count(o => o.OrderStatus == "Shipping"))
+                    Đang giao (@allOrders.Count(o => NormalizeStatus(o.OrderStatus) == "Shipping"))
                 </a>
                 <a asp-controller="Orders" asp-action="MyOrders" asp-route-phoneNumber="@phoneNumber" asp-route-status="Completed"
                    class="category-tab-btn text-decoration-none @(activeStatus == "Completed" ? "active" : "")">
-                    Hoàn thành (@allOrders.Count(o => o.OrderStatus == "Completed"))
+                    Hoàn thành (@allOrders.Count(o => NormalizeStatus(o.OrderStatus) == "Completed"))
                 </a>
                 <a asp-controller="Orders" asp-action="MyOrders" asp-route-phoneNumber="@phoneNumber" asp-route-status="Cancelled"
                    class="category-tab-btn text-decoration-none @(activeStatus == "Cancelled" ? "active" : "")">
-                    Đã hủy (@allOrders.Count(o => o.OrderStatus == "Cancelled"))
+                    Đã hủy (@allOrders.Count(o => NormalizeStatus(o.OrderStatus) == "Cancelled"))
                 </a>
             </div>
 
@@ -153,7 +166,8 @@
                 <div class="d-flex flex-column gap-3">
                     @foreach (var order in Model)
                     {
-                        var statusClass = order.OrderStatus switch
+                        var normStatus = NormalizeStatus(order.OrderStatus);
+                        var statusClass = normStatus switch
                         {
                             "Pending" => "status-pending",
                             "Confirmed" => "status-confirmed",
@@ -162,7 +176,7 @@
                             "Cancelled" => "status-cancelled",
                             _ => "status-pending"
                         };
-                        var statusLabel = order.OrderStatus switch
+                        var statusLabel = normStatus switch
                         {
                             "Pending" => "Chờ duyệt",
                             "Confirmed" => "Đã duyệt",
@@ -220,7 +234,7 @@
                                         @order.TotalAmount.ToString("N0") đ
                                     </div>
                                     <div class="d-flex align-items-center justify-content-end gap-2">
-                                        @if (order.OrderStatus == "Pending" || order.OrderStatus == "Confirmed")
+                                        @if (normStatus == "Pending" || normStatus == "Confirmed")
                                         {
                                             <form method="post" asp-action="CancelOrder" onsubmit="return confirm('Bạn có chắc chắn muốn hủy đơn hàng này không? Số lượng sản phẩm sẽ được tự động hoàn lại vào kho.')">
                                                 @Html.AntiForgeryToken()

@@ -103,7 +103,7 @@ public class ProductsModel : PageModel
         {
             AlertMessage = "Vui lòng nhập đầy đủ Tên, Danh mục và Giá sản phẩm hợp lệ!";
             AlertType = "danger";
-            return RedirectToPage();
+            return RedirectToPage(new { SearchKeyword, CategoryId, CurrentPage });
         }
 
         // Xử lý tải ảnh từ máy tính (Desktop) nếu người dùng chọn upload file
@@ -113,7 +113,7 @@ public class ProductsModel : PageModel
             {
                 AlertMessage = "Ảnh sản phẩm không được vượt quá 5 MB.";
                 AlertType = "danger";
-                return RedirectToPage();
+                return RedirectToPage(new { SearchKeyword, CategoryId, CurrentPage });
             }
 
             var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
@@ -122,7 +122,7 @@ public class ProductsModel : PageModel
             {
                 AlertMessage = "Chỉ chấp nhận ảnh JPG, JPEG, PNG hoặc WEBP.";
                 AlertType = "danger";
-                return RedirectToPage();
+                return RedirectToPage(new { SearchKeyword, CategoryId, CurrentPage });
             }
 
             var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "products");
@@ -140,7 +140,6 @@ public class ProductsModel : PageModel
         if (InputProduct.Id == 0)
         {
             // Thêm mới
-            InputProduct.IsActive = true;
             _context.Products.Add(InputProduct);
             AlertMessage = $"Đã thêm thành công sản phẩm: {InputProduct.Name}";
             AlertType = "success";
@@ -171,7 +170,7 @@ public class ProductsModel : PageModel
         }
 
         await _context.SaveChangesAsync();
-        return RedirectToPage();
+        return RedirectToPage(new { SearchKeyword, CategoryId, CurrentPage });
     }
 
     /// <summary>
@@ -201,7 +200,7 @@ public class ProductsModel : PageModel
                 AlertType = "success";
             }
         }
-        return RedirectToPage();
+        return RedirectToPage(new { SearchKeyword, CategoryId, CurrentPage });
     }
 
     /// <summary>
@@ -217,6 +216,6 @@ public class ProductsModel : PageModel
             AlertMessage = $"Đã đổi trạng thái sản phẩm: {product.Name}";
             AlertType = "info";
         }
-        return RedirectToPage();
+        return RedirectToPage(new { SearchKeyword, CategoryId, CurrentPage });
     }
 }

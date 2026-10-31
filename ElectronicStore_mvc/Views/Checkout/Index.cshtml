@@ -7,6 +7,7 @@
     string phoneNumber = ViewBag.PhoneNumber ?? "";
     string email = ViewBag.Email ?? "";
     string shippingAddress = ViewBag.ShippingAddress ?? "";
+    string paymentMethod = ViewBag.PaymentMethod ?? "COD";
     string notes = ViewBag.Notes ?? "";
 }
 
@@ -148,8 +149,9 @@
                         <h5 class="fw-bold text-dark mb-4">02. Phương thức thanh toán</h5>
 
                         <div class="d-flex flex-column gap-2">
-                            <label class="payment-method-card">
-                                <input type="radio" name="paymentMethod" value="COD" class="form-check-input mt-0" checked />
+
+                            <label class="payment-method-card @(paymentMethod == "COD" ? "active" : "")">
+                                <input type="radio" name="paymentMethod" value="COD" class="form-check-input mt-0" @(paymentMethod == "COD" ? "checked" : "") />
                                 <div class="flex-grow-1">
                                     <div class="fw-bold text-dark small">Thanh toán khi nhận hàng (COD)</div>
                                     <div class="text-secondary small">Thanh toán cho nhân viên giao hàng khi nhận sản phẩm.</div>
@@ -159,8 +161,9 @@
                                 </svg>
                             </label>
 
-                            <label class="payment-method-card">
-                                <input type="radio" name="paymentMethod" value="BankTransfer" class="form-check-input mt-0" />
+
+                            <label class="payment-method-card @(paymentMethod == "BankTransfer" ? "active" : "")">
+                                <input type="radio" name="paymentMethod" value="BankTransfer" class="form-check-input mt-0" @(paymentMethod == "BankTransfer" ? "checked" : "") />
                                 <div class="flex-grow-1">
                                     <div class="fw-bold text-dark small">Chuyển khoản ngân hàng qua QR</div>
                                     <div class="text-secondary small">Mã QR và nội dung chuyển khoản hiển thị sau khi đặt hàng.</div>
@@ -170,8 +173,9 @@
                                 </svg>
                             </label>
 
-                            <label class="payment-method-card">
-                                <input type="radio" name="paymentMethod" value="VNPAY" class="form-check-input mt-0" />
+
+                            <label class="payment-method-card @(paymentMethod == "VNPAY" ? "active" : "")">
+                                <input type="radio" name="paymentMethod" value="VNPAY" class="form-check-input mt-0" @(paymentMethod == "VNPAY" ? "checked" : "") />
                                 <div class="flex-grow-1">
                                     <div class="fw-bold text-dark small">VNPAY</div>
                                     <div class="text-secondary small">Thẻ ATM, thẻ quốc tế và ứng dụng ngân hàng.</div>
@@ -181,8 +185,9 @@
                                 </svg>
                             </label>
 
-                            <label class="payment-method-card">
-                                <input type="radio" name="paymentMethod" value="MOMO" class="form-check-input mt-0" />
+
+                            <label class="payment-method-card @(paymentMethod == "MOMO" ? "active" : "")">
+                                <input type="radio" name="paymentMethod" value="MOMO" class="form-check-input mt-0" @(paymentMethod == "MOMO" ? "checked" : "") />
                                 <div class="flex-grow-1">
                                     <div class="fw-bold text-dark small">MOMO</div>
                                     <div class="text-secondary small">Thanh toán nhanh qua ví điện tử MoMo.</div>
@@ -274,3 +279,19 @@
         </form>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('.payment-method-card input[type="radio"]').forEach(function (radio) {
+            radio.addEventListener('change', function () {
+                document.querySelectorAll('.payment-method-card').forEach(function (card) {
+                    card.classList.remove('active');
+                });
+                if (this.checked) {
+                    const card = this.closest('.payment-method-card');
+                    if (card) card.classList.add('active');
+                }
+            });
+        });
+    </script>
+}

@@ -267,3 +267,19 @@
         </form>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('.payment-method-card input[type="radio"]').forEach(function (radio) {
+            radio.addEventListener('change', function () {
+                document.querySelectorAll('.payment-method-card').forEach(function (card) {
+                    card.classList.remove('active');
+                });
+                if (this.checked) {
+                    const card = this.closest('.payment-method-card');
+                    if (card) card.classList.add('active');
+                }
+            });
+        });
+    </script>
+}

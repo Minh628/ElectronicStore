@@ -208,6 +208,9 @@
                             </td>
                             <td>
                                 <form method="post" asp-page-handler="ToggleActive" asp-route-id="@p.Id" class="d-inline">
+                                    <input type="hidden" name="SearchKeyword" value="@Model.SearchKeyword" />
+                                    <input type="hidden" name="CategoryId" value="@Model.CategoryId" />
+                                    <input type="hidden" name="CurrentPage" value="@Model.CurrentPage" />
                                     <button type="submit" class="border-0 bg-transparent p-0" title="Bấm để bật/tắt hiển thị">
                                         @if (p.IsActive)
                                         {
@@ -249,6 +252,9 @@
                                         <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                     </button>
                                     <form method="post" asp-page-handler="Delete" asp-route-id="@p.Id" class="d-inline">
+                                        <input type="hidden" name="SearchKeyword" value="@Model.SearchKeyword" />
+                                        <input type="hidden" name="CategoryId" value="@Model.CategoryId" />
+                                        <input type="hidden" name="CurrentPage" value="@Model.CurrentPage" />
                                         <button type="submit" class="admin-action-btn delete" title="Xóa thiết bị"
                                                 onclick="return confirm('Bạn có chắc chắn muốn xóa sản phẩm này khỏi hệ thống?');">
                                             <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
@@ -299,6 +305,9 @@
             <form method="post" asp-page-handler="Save" enctype="multipart/form-data">
                 <div class="modal-body p-4">
                     <input type="hidden" id="prodId" name="InputProduct.Id" value="0" />
+                    <input type="hidden" name="SearchKeyword" value="@Model.SearchKeyword" />
+                    <input type="hidden" name="CategoryId" value="@Model.CategoryId" />
+                    <input type="hidden" name="CurrentPage" value="@Model.CurrentPage" />
 
                     <div class="row g-4">
                         <!-- Cột Trái: Thông tin chính -->

@@ -42,9 +42,28 @@
 
         @if (order != null)
         {
+            var normStatus = NormalizeStatus(order.OrderStatus);
+            var statusClass = normStatus switch
+            {
+                "Pending" => "status-pending",
+                "Confirmed" => "status-confirmed",
+                "Shipping" => "status-shipping",
+                "Completed" => "status-completed",
+                "Cancelled" => "status-cancelled",
+                _ => "status-pending"
+            };
+            var statusLabel = normStatus switch
+            {
+                "Pending" => "Chờ duyệt",
+                "Confirmed" => "Đã duyệt",
+                "Shipping" => "Đang giao",
+                "Completed" => "Hoàn thành",
+                "Cancelled" => "Đã hủy",
+                _ => order.OrderStatus
+            };
             <div class="d-inline-flex align-items-center gap-2 small">
                 <span class="fw-bold text-dark">Mã đơn hàng #ES@(order.Id.ToString("D7"))</span>
-                <span class="demo-badge-status status-pending">@(order.OrderStatus == "Pending" ? "Chờ duyệt" : order.OrderStatus)</span>
+                <span class="demo-badge-status @statusClass">@statusLabel</span>
             </div>
         }
     </div>
@@ -144,7 +163,7 @@
                 <span>In hóa đơn</span>
             </button>
         }
-        <a href="my-orders" class="btn btn-primary px-4 py-2 fw-semibold rounded-3 d-inline-flex align-items-center gap-2"
+        <a href="@(UserService.IsAuthenticated || string.IsNullOrWhiteSpace(order?.ReceiverPhone) ? "my-orders" : $"my-orders?phone={Uri.EscapeDataString(order.ReceiverPhone)}")" class="btn btn-primary px-4 py-2 fw-semibold rounded-3 d-inline-flex align-items-center gap-2"
            style="background:var(--accent-blue); border:none;">
             <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
@@ -176,6 +195,16 @@
     public string? Phone { get; set; }
 
     private Order? order;
+
+    private static string NormalizeStatus(string? status) => status switch
+    {
+        "Chờ xử lý" or "Pending" => "Pending",
+        "Đã duyệt" or "Confirmed" => "Confirmed",
+        "Đang giao" or "Đang giao hàng" or "Shipping" => "Shipping",
+        "Hoàn thành" or "Đã giao" or "Hoàn tất" or "Completed" => "Completed",
+        "Đã hủy" or "Cancelled" => "Cancelled",
+        _ => status ?? string.Empty
+    };
 
     protected override void OnInitialized()
     {

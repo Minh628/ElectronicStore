@@ -221,7 +221,7 @@ public class AccountController : Controller
         user.FullName = fullName.Trim();
         user.Email = email.Trim();
         user.PhoneNumber = string.IsNullOrWhiteSpace(phoneNumber) ? null : phoneNumber.Trim();
-        user.Address = string.IsNullOrWhiteSpace(address) ? null : address.Trim();
+        user.Address = string.IsNullOrWhiteSpace(address) || address.Trim() == "Chưa cập nhật địa chỉ" ? null : address.Trim();
 
         // Xử lý đổi mật khẩu nếu có
         if (!string.IsNullOrWhiteSpace(newPassword))
@@ -260,6 +260,7 @@ public class AccountController : Controller
 
     public async Task<IActionResult> Logout()
     {
+        HttpContext.Session.Remove("LastGuestOrderId");
         await _signInManager.SignOutAsync();
         return RedirectToAction("Index", "Home");
     }
@@ -269,6 +270,7 @@ public class AccountController : Controller
     /// </summary>
     public async Task<IActionResult> AdminLogout()
     {
+        HttpContext.Session.Remove("LastGuestOrderId");
         await _signInManager.SignOutAsync();
         return RedirectToAction("AdminLogin", "Account");
     }

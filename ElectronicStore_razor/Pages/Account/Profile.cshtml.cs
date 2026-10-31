@@ -77,7 +77,7 @@ public class ProfileModel : PageModel
             FullName = user.FullName ?? "",
             Email = user.Email ?? "",
             PhoneNumber = user.PhoneNumber,
-            Address = user.Address
+            Address = user.Address == "Chưa cập nhật địa chỉ" ? "" : user.Address
         };
 
         return Page();
@@ -102,7 +102,7 @@ public class ProfileModel : PageModel
         user.FullName = Input.FullName.Trim();
         user.Email = Input.Email.Trim();
         user.PhoneNumber = string.IsNullOrWhiteSpace(Input.PhoneNumber) ? null : Input.PhoneNumber.Trim();
-        user.Address = string.IsNullOrWhiteSpace(Input.Address) ? null : Input.Address.Trim();
+        user.Address = string.IsNullOrWhiteSpace(Input.Address) || Input.Address.Trim() == "Chưa cập nhật địa chỉ" ? null : Input.Address.Trim();
 
         // Xử lý đổi mật khẩu nếu người dùng nhập mật khẩu mới
         if (!string.IsNullOrWhiteSpace(Input.NewPassword))

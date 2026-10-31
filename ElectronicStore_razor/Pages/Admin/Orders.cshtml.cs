@@ -127,8 +127,9 @@ public class OrdersModel : PageModel
 
         if (order != null)
         {
+            var previousStatus = NormalizeStatus(order.OrderStatus);
             // 1. Nếu chuyển sang Cancelled mà trước đó chưa phải Cancelled -> hoàn lại tồn kho
-            if (newStatus == "Cancelled" && order.OrderStatus != "Cancelled")
+            if (newStatus == "Cancelled" && previousStatus != "Cancelled")
             {
                 foreach (var d in order.OrderDetails)
                 {
@@ -140,7 +141,7 @@ public class OrdersModel : PageModel
                 }
             }
             // 2. Nếu từ Cancelled đổi lại trạng thái khác -> trừ lại kho
-            else if (order.OrderStatus == "Cancelled" && newStatus != "Cancelled")
+            else if (previousStatus == "Cancelled" && newStatus != "Cancelled")
             {
                 foreach (var d in order.OrderDetails)
                 {

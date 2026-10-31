@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using ElectronicStore_razor.Data;
@@ -21,16 +21,23 @@ public class CartModel : PageModel
     public List<CartItem> CartItems { get; set; } = new();
     public decimal TotalAmount { get; set; }
 
-    public void OnGet()
+    public async Task OnGetAsync()
     {
+        var cart = _cartService.GetCart();
+        if (cart.Count > 0)
+        {
+            var productIds = cart.Select(c => c.ProductId).ToList();
+            var dbProducts = await _context.Products.Include(p => p.Category).Where(p => productIds.Contains(p.Id)).ToListAsync();
+            _cartService.SyncWithProducts(dbProducts);
+        }
         CartItems = _cartService.GetCart();
         TotalAmount = _cartService.GetTotal();
     }
 
     public async Task<IActionResult> OnPostUpdateQuantityAsync(int productId, int quantity)
     {
-        var product = await _context.Products.FindAsync(productId);
-        int maxStock = product?.Quantity ?? 99;
+        var product = await _context.Products.Include(p => p.Category).FirstOrDefaultAsync(p => p.Id == productId);
+        int maxStock = (product != null && product.IsActive && (product.Category == null || product.Category.IsActive)) ? product.Quantity : 0;
 
         // Cập nhật số lượng trong session giỏ hàng
         _cartService.UpdateQuantity(productId, quantity, maxStock);

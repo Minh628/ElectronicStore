@@ -1,5 +1,6 @@
 @page "/cart"
 @inject CartService CartService
+@inject ProductService ProductService
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 @implements IDisposable
@@ -195,9 +196,10 @@
     protected override void OnInitialized()
     {
         CartService.OnChange += StateHasChanged;
+        CartService.SyncWithProducts(ProductService.GetAllProducts());
     }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender) { if (firstRender) { await CartService.RestoreCartAsync(JS); StateHasChanged(); } }
+    protected override async Task OnAfterRenderAsync(bool firstRender) { if (firstRender) { await CartService.RestoreCartAsync(JS); CartService.SyncWithProducts(ProductService.GetAllProducts()); StateHasChanged(); } }
     private async Task ClearCart()
     {
         if (await JS.InvokeAsync<bool>("confirm", "Bạn có chắc muốn xóa tất cả sản phẩm khỏi giỏ hàng?")) CartService.Clear();

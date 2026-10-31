@@ -110,8 +110,8 @@
                                     <!-- Stepper -->
                                     <div class="d-flex align-items-center justify-content-sm-end gap-2">
                                         <div class="input-group input-group-sm" style="width: 100px;">
-                                            <button class="btn btn-outline-secondary" type="button" 
-                                                    onclick="changeCartQtyAjax(@item.ProductId, -1, @item.StockQuantity)">-</button>
+
+                                            <button class="btn btn-outline-secondary" type="button" id="btn-minus-@item.ProductId" @(item.Quantity <= 1 ? "disabled" : "") onclick="changeCartQtyAjax(@item.ProductId, -1, @item.StockQuantity)">-</button>
                                             <input type="number" id="item-qty-@item.ProductId" class="form-control text-center fw-bold bg-white" min="1" max="@item.StockQuantity" value="@item.Quantity" onchange="setCartQtyAjax(@item.ProductId, this.value, @item.StockQuantity)" />
                                             <button class="btn btn-outline-secondary" type="button" id="btn-plus-@item.ProductId"
                                                     onclick="changeCartQtyAjax(@item.ProductId, 1, @item.StockQuantity)" 
@@ -227,6 +227,8 @@
 
                     const btnPlus = document.getElementById(`btn-plus-${productId}`);
                     if (btnPlus) btnPlus.disabled = (data.itemQuantity >= maxStock);
+                    const btnMinus = document.getElementById(`btn-minus-${productId}`);
+                    if (btnMinus) btnMinus.disabled = (data.itemQuantity <= 1);
                 }
             })
             .catch(err => console.error(err));
@@ -268,6 +270,8 @@
 
                     const btnPlus = document.getElementById(`btn-plus-${productId}`);
                     if (btnPlus) btnPlus.disabled = (data.itemQuantity >= maxStock);
+                    const btnMinus = document.getElementById(`btn-minus-${productId}`);
+                    if (btnMinus) btnMinus.disabled = (data.itemQuantity <= 1);
                 }
             })
             .catch(err => console.error(err));

@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using ElectronicStore_mvc.Models;
 using ElectronicStore_mvc.Models.Entities;
 
@@ -59,8 +59,8 @@ public class CartService
         if (quantity <= 0)
             return (false, "Số lượng sản phẩm thêm vào giỏ phải lớn hơn 0!");
 
-        if (product == null)
-            return (false, "Sản phẩm không tồn tại!");
+        if (product == null || !product.IsActive || (product.Category != null && !product.Category.IsActive))
+            return (false, "Sản phẩm không tồn tại hoặc đã ngừng kinh doanh!");
 
         if (product.Quantity <= 0)
             return (false, "Sản phẩm này hiện đã hết hàng!");
@@ -76,6 +76,10 @@ public class CartService
                 return (false, $"Kho chỉ còn {product.Quantity} sản phẩm, bạn đã có {existing.Quantity} trong giỏ!");
             }
             existing.Quantity += quantity;
+            existing.StockQuantity = product.Quantity;
+            existing.UnitPrice = product.Price;
+            existing.ProductName = product.Name;
+            existing.ImageUrl = product.ImageUrl;
         }
         else
         {
@@ -155,5 +159,50 @@ public class CartService
     public decimal GetTotal()
     {
         return GetCart().Sum(c => c.TotalPrice);
+    }
+
+    /// <summary>
+    /// Đồng bộ tồn kho, đơn giá và trạng thái kinh doanh thực tế từ Database cho các sản phẩm trong giỏ
+    /// </summary>
+    public void SyncWithProducts(IEnumerable<Product> products)
+    {
+        var cart = GetCart();
+        if (cart.Count == 0) return;
+
+        var productMap = products.ToDictionary(p => p.Id);
+        bool changed = false;
+
+        for (int i = cart.Count - 1; i >= 0; i--)
+        {
+            var item = cart[i];
+            if (!productMap.TryGetValue(item.ProductId, out var p) || !p.IsActive || (p.Category != null && !p.Category.IsActive) || p.Quantity <= 0)
+            {
+                cart.RemoveAt(i);
+                changed = true;
+                continue;
+            }
+
+            if (item.StockQuantity != p.Quantity || item.UnitPrice != p.Price || item.ProductName != p.Name || item.ImageUrl != p.ImageUrl)
+            {
+                item.StockQuantity = p.Quantity;
+                item.UnitPrice = p.Price;
+                item.ProductName = p.Name;
+                item.Brand = p.Brand;
+                item.ImageUrl = p.ImageUrl;
+                item.WarrantyMonths = p.WarrantyMonths;
+                changed = true;
+            }
+
+            if (item.Quantity > p.Quantity)
+            {
+                item.Quantity = p.Quantity;
+                changed = true;
+            }
+        }
+
+        if (changed)
+        {
+            SaveCart(cart);
+        }
     }
 }

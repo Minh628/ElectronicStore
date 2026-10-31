@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using ElectronicStore_razor.Models.Entities;
@@ -17,14 +17,14 @@ public class LogoutModel : PageModel
     public async Task<IActionResult> OnGetAsync()
     {
         await _signInManager.SignOutAsync();
-        HttpContext.Session.Clear();
+        HttpContext.Session.Remove("LastGuestOrderId");
         return RedirectToPage("/Index");
     }
 
     public async Task<IActionResult> OnPostAsync()
     {
         await _signInManager.SignOutAsync();
-        HttpContext.Session.Clear();
+        HttpContext.Session.Remove("LastGuestOrderId");
         return RedirectToPage("/Index");
     }
 }

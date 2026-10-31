@@ -181,6 +181,36 @@ public class UserService
         OnChange?.Invoke();
     }
 
+    /// <summary>
+    /// Thực thi an toàn các thao tác UserManager trên cùng một Scoped DbContext bằng SemaphoreSlim
+    /// để ngăn lỗi "A second operation was started on this context instance before a previous operation completed".
+    /// </summary>
+    public async Task<T> ExecuteWithLockAsync<T>(Func<UserManager<ApplicationUser>, Task<T>> action)
+    {
+        await _lock.WaitAsync();
+        try
+        {
+            return await action(_userManager);
+        }
+        finally
+        {
+            _lock.Release();
+        }
+    }
+
+    public async Task ExecuteWithLockAsync(Func<UserManager<ApplicationUser>, Task> action)
+    {
+        await _lock.WaitAsync();
+        try
+        {
+            await action(_userManager);
+        }
+        finally
+        {
+            _lock.Release();
+        }
+    }
+
     public async Task LogoutAsync(IJSRuntime? js = null)
     {
         CurrentUser = null;

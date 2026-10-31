@@ -137,7 +137,7 @@
                             <!-- Địa chỉ giao hàng mặc định -->
                             <div class="col-12" id="address">
                                 <label class="form-label small fw-semibold text-dark">Địa chỉ nhận hàng mặc định</label>
-                                <textarea name="address" rows="3" class="form-control rounded-3" placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố...">@Model.Address</textarea>
+                                <textarea name="address" rows="3" class="form-control rounded-3" placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố...">@(Model.Address == "Chưa cập nhật địa chỉ" ? "" : Model.Address)</textarea>
                             </div>
                         </div>
 

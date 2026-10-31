@@ -47,7 +47,7 @@ public class CheckoutController : Controller
                 ViewBag.FullName = user.FullName ?? user.UserName;
                 ViewBag.PhoneNumber = user.PhoneNumber;
                 ViewBag.Email = user.Email;
-                ViewBag.ShippingAddress = user.Address;
+                ViewBag.ShippingAddress = user.Address == "Chưa cập nhật địa chỉ" ? "" : user.Address;
             }
         }
 
@@ -81,10 +81,11 @@ public class CheckoutController : Controller
             ViewBag.PhoneNumber = phoneNumber;
             ViewBag.Email = email;
             ViewBag.ShippingAddress = shippingAddress;
+            ViewBag.PaymentMethod = paymentMethod;
             ViewBag.Notes = notes;
         }
 
-        if (string.IsNullOrWhiteSpace(fullName) || string.IsNullOrWhiteSpace(phoneNumber) || string.IsNullOrWhiteSpace(shippingAddress))
+        if (string.IsNullOrWhiteSpace(fullName) || string.IsNullOrWhiteSpace(phoneNumber) || string.IsNullOrWhiteSpace(shippingAddress) || shippingAddress.Trim() == "Chưa cập nhật địa chỉ")
         {
             ViewBag.ErrorMessage = "Vui lòng nhập đầy đủ Họ tên, Số điện thoại và Địa chỉ giao hàng!";
             PreserveFormData();
@@ -133,7 +134,7 @@ public class CheckoutController : Controller
                     user.PhoneNumber = phoneNumber.Trim();
                     userUpdated = true;
                 }
-                if (string.IsNullOrEmpty(user.Address))
+                if (string.IsNullOrEmpty(user.Address) || user.Address == "Chưa cập nhật địa chỉ")
                 {
                     user.Address = shippingAddress.Trim();
                     userUpdated = true;

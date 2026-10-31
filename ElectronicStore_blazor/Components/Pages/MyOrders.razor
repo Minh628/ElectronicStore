@@ -117,19 +117,19 @@
                     Tất cả (@orders.Count)
                 </button>
                 <button type="button" class="category-tab-btn @(activeTab == "Pending" ? "active" : "")" @onclick='() => SetTab("Pending")'>
-                    Chờ duyệt (@orders.Count(o => o.OrderStatus == "Pending"))
+                    Chờ duyệt (@orders.Count(o => NormalizeStatus(o.OrderStatus) == "Pending"))
                 </button>
                 <button type="button" class="category-tab-btn @(activeTab == "Confirmed" ? "active" : "")" @onclick='() => SetTab("Confirmed")'>
-                    Đã duyệt (@orders.Count(o => o.OrderStatus == "Confirmed"))
+                    Đã duyệt (@orders.Count(o => NormalizeStatus(o.OrderStatus) == "Confirmed"))
                 </button>
                 <button type="button" class="category-tab-btn @(activeTab == "Shipping" ? "active" : "")" @onclick='() => SetTab("Shipping")'>
-                    Đang giao (@orders.Count(o => o.OrderStatus == "Shipping"))
+                    Đang giao (@orders.Count(o => NormalizeStatus(o.OrderStatus) == "Shipping"))
                 </button>
                 <button type="button" class="category-tab-btn @(activeTab == "Completed" ? "active" : "")" @onclick='() => SetTab("Completed")'>
-                    Hoàn thành (@orders.Count(o => o.OrderStatus == "Completed"))
+                    Hoàn thành (@orders.Count(o => NormalizeStatus(o.OrderStatus) == "Completed"))
                 </button>
                 <button type="button" class="category-tab-btn @(activeTab == "Cancelled" ? "active" : "")" @onclick='() => SetTab("Cancelled")'>
-                    Đã hủy (@orders.Count(o => o.OrderStatus == "Cancelled"))
+                    Đã hủy (@orders.Count(o => NormalizeStatus(o.OrderStatus) == "Cancelled"))
                 </button>
             </div>
 
@@ -149,7 +149,8 @@
                 <div class="d-flex flex-column gap-3">
                     @foreach (var order in FilteredOrders)
                     {
-                        var statusClass = order.OrderStatus switch
+                        var normStatus = NormalizeStatus(order.OrderStatus);
+                        var statusClass = normStatus switch
                         {
                             "Pending" => "status-pending",
                             "Confirmed" => "status-confirmed",
@@ -158,7 +159,7 @@
                             "Cancelled" => "status-cancelled",
                             _ => "status-pending"
                         };
-                        var statusLabel = order.OrderStatus switch
+                        var statusLabel = normStatus switch
                         {
                             "Pending" => "Chờ duyệt",
                             "Confirmed" => "Đã duyệt",
@@ -216,7 +217,7 @@
                                         @order.TotalAmount.ToString("N0") đ
                                     </div>
                                     <div class="d-flex align-items-center justify-content-end gap-2">
-                                        @if (order.OrderStatus == "Pending" || order.OrderStatus == "Confirmed")
+                                        @if (normStatus == "Pending" || normStatus == "Confirmed")
                                         {
                                             <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3 py-1 fw-semibold small"
                                                     @onclick="() => HandleCancelOrder(order.Id)">
@@ -238,6 +239,15 @@
 </div>
 
 @code {
+    [SupplyParameterFromQuery(Name = "phone")]
+    public string? QueryPhone { get; set; }
+
+    [SupplyParameterFromQuery(Name = "phoneNumber")]
+    public string? QueryPhoneNumber { get; set; }
+
+    [SupplyParameterFromQuery(Name = "LookupPhone")]
+    public string? QueryLookupPhone { get; set; }
+
     private string searchPhone = "";
     private string activeTab = "All";
     private string? successMessage;
@@ -245,11 +255,27 @@
     private List<Order> orders = new();
 
     private IEnumerable<Order> FilteredOrders =>
-        activeTab == "All" ? orders : orders.Where(o => o.OrderStatus == activeTab);
+        activeTab == "All" ? orders : orders.Where(o => NormalizeStatus(o.OrderStatus) == activeTab);
+
+    private static string NormalizeStatus(string? status) => status switch
+    {
+        "Chờ xử lý" or "Pending" => "Pending",
+        "Đã duyệt" or "Confirmed" => "Confirmed",
+        "Đang giao" or "Đang giao hàng" or "Shipping" => "Shipping",
+        "Hoàn thành" or "Đã giao" or "Hoàn tất" or "Completed" => "Completed",
+        "Đã hủy" or "Cancelled" => "Cancelled",
+        _ => status ?? string.Empty
+    };
 
     protected override void OnInitialized()
     {
-        if (UserService.IsAuthenticated && UserService.CurrentUser != null)
+        var initialPhone = QueryPhone ?? QueryPhoneNumber ?? QueryLookupPhone;
+        if (!string.IsNullOrWhiteSpace(initialPhone))
+        {
+            searchPhone = initialPhone.Trim();
+            LoadOrdersByPhone();
+        }
+        else if (UserService.IsAuthenticated && UserService.CurrentUser != null)
         {
             LoadUserOrders();
         }
@@ -260,7 +286,7 @@
         if (firstRender && !UserService.IsAuthenticated)
         {
             var restored = await UserService.RestoreSessionAsync(JS);
-            if (restored && UserService.CurrentUser != null)
+            if (restored && UserService.CurrentUser != null && string.IsNullOrWhiteSpace(searchPhone))
             {
                 LoadUserOrders();
                 StateHasChanged();
@@ -313,12 +339,15 @@
     private void LoadUserOrders()
     {
         using var context = DbFactory.CreateDbContext();
-        var username = UserService.CurrentUser?.UserName;
+        var userId = UserService.CurrentUser?.Id;
+        var userPhone = UserService.CurrentUser?.PhoneNumber?.Trim();
+        // Hiển thị cả đơn hàng đặt bằng tài khoản lẫn đơn đặt lúc chưa đăng nhập nhưng trùng SĐT tài khoản
         orders = context.Orders
             .Include(o => o.User)
             .Include(o => o.OrderDetails)
                 .ThenInclude(od => od.Product)
-            .Where(o => o.User != null && o.User.UserName == username)
+            .Where(o => (userId != null && o.UserId == userId) ||
+                        (string.IsNullOrEmpty(o.UserId) && !string.IsNullOrEmpty(userPhone) && o.ReceiverPhone == userPhone))
             .OrderByDescending(o => o.OrderDate)
             .ToList();
     }

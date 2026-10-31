@@ -31,20 +31,20 @@ public class OrdersController : Controller
                 .ThenInclude(od => od.Product)
             .AsQueryable();
 
-        // 1. Nếu đã đăng nhập, lọc theo UserId của tài khoản Identity
-        if (User.Identity != null && User.Identity.IsAuthenticated)
+        // 1. Nếu khách chủ động nhập SĐT vào ô tra cứu nhanh thì lọc theo SĐT nhận hàng
+        if (!string.IsNullOrWhiteSpace(phoneNumber))
+        {
+            query = query.Where(o => o.ReceiverPhone == phoneNumber.Trim());
+            ViewBag.PhoneNumber = phoneNumber.Trim();
+        }
+        // 2. Ngược lại nếu đã đăng nhập, lọc theo UserId của tài khoản Identity
+        else if (User.Identity != null && User.Identity.IsAuthenticated)
         {
             var user = await _userManager.GetUserAsync(User);
             if (user != null)
             {
                 query = query.Where(o => o.UserId == user.Id);
             }
-        }
-        else if (!string.IsNullOrWhiteSpace(phoneNumber))
-        {
-            // 2. Nếu khách tra cứu nhanh bằng SĐT nhận hàng
-            query = query.Where(o => o.ReceiverPhone == phoneNumber.Trim());
-            ViewBag.PhoneNumber = phoneNumber.Trim();
         }
         else
         {
@@ -97,7 +97,11 @@ public class OrdersController : Controller
         if (User.Identity != null && User.Identity.IsAuthenticated)
         {
             var currentUser = await _userManager.GetUserAsync(User);
-            if (currentUser == null || order.UserId != currentUser.Id)
+            var effectivePhone = !string.IsNullOrWhiteSpace(phoneNumber) ? phoneNumber.Trim() : currentUser?.PhoneNumber?.Trim();
+            bool isOwner = currentUser != null &&
+                           (order.UserId == currentUser.Id ||
+                            (string.IsNullOrEmpty(order.UserId) && !string.IsNullOrWhiteSpace(effectivePhone) && order.ReceiverPhone == effectivePhone));
+            if (!isOwner)
             {
                 TempData["ErrorMessage"] = "Bạn không có quyền thao tác trên đơn hàng này!";
                 return RedirectToAction(nameof(MyOrders), new { phoneNumber, status });

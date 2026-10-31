@@ -136,6 +136,18 @@
         }
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !UserService.IsAuthenticated)
+        {
+            var restored = await UserService.RestoreSessionAsync(JS);
+            if (restored && UserService.IsAdmin)
+            {
+                Navigation.NavigateTo(!string.IsNullOrEmpty(returnUrl) ? returnUrl : "admin/products");
+            }
+        }
+    }
+
     private void FillAdminDemo()
     {
         username = "admin";

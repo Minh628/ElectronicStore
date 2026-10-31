@@ -205,11 +205,10 @@ public class CheckoutController : Controller
         if (order != null && !User.IsInRole("Admin"))
         {
             var user = await _userManager.GetUserAsync(User);
-            var ownsOrder = user != null
-                ? order.UserId == user.Id
-                : order.UserId == null &&
-                  (HttpContext.Session.GetInt32("LastGuestOrderId") == actualId ||
-                   (!string.IsNullOrWhiteSpace(phone) && order.ReceiverPhone == phone.Trim()));
+            var effectivePhone = !string.IsNullOrWhiteSpace(phone) ? phone.Trim() : user?.PhoneNumber?.Trim();
+            var ownsOrder = (user != null && order.UserId == user.Id) ||
+                            HttpContext.Session.GetInt32("LastGuestOrderId") == actualId ||
+                            (!string.IsNullOrWhiteSpace(effectivePhone) && order.ReceiverPhone == effectivePhone);
             if (!ownsOrder)
             {
                 return NotFound();

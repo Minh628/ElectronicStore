@@ -56,11 +56,12 @@ public class HomeController : Controller
             query = query.Where(p => p.Brand == Brand);
         }
 
-        // Tìm kiếm theo tên sản phẩm hoặc thông số
+        // Tìm kiếm theo tên sản phẩm, thương hiệu hoặc thông số
         if (!string.IsNullOrWhiteSpace(SearchKeyword))
         {
             var kw = SearchKeyword.Trim().ToLower();
             query = query.Where(p => p.Name.ToLower().Contains(kw) || 
+                                     p.Brand.ToLower().Contains(kw) ||
                                      (p.Specifications != null && p.Specifications.ToLower().Contains(kw)));
         }
 

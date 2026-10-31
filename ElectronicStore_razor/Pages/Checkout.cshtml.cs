@@ -79,20 +79,21 @@ public class CheckoutModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
-        if (PaymentMethod is not ("COD" or "BankTransfer" or "VNPAY" or "MOMO"))
-        {
-            ErrorMessage = "Phương thức thanh toán không hợp lệ.";
-            return Page();
-        }
-
         CartItems = _cartService.GetCart();
         if (CartItems.Count == 0)
         {
             return RedirectToPage("/Cart");
         }
 
-        await using var transaction = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
         TotalAmount = _cartService.GetTotal();
+
+        if (PaymentMethod is not ("COD" or "BankTransfer" or "VNPAY" or "MOMO"))
+        {
+            ErrorMessage = "Phương thức thanh toán không hợp lệ.";
+            return Page();
+        }
+
+        await using var transaction = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
 
         if (string.IsNullOrWhiteSpace(FullName) || string.IsNullOrWhiteSpace(PhoneNumber) || string.IsNullOrWhiteSpace(ShippingAddress))
         {

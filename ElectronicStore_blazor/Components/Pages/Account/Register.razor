@@ -67,34 +67,34 @@
             <form @onsubmit="HandleRegister">
                 <div class="mb-3">
                     <label class="form-label small fw-semibold text-secondary">Tên đăng nhập *</label>
-                    <input type="text" @bind="username" class="form-control form-control-custom" placeholder="Ví dụ: nguyenvana" autofocus required />
+                    <input type="text" @bind="username" @bind:event="oninput" class="form-control form-control-custom" placeholder="Ví dụ: nguyenvana" autofocus required />
                     <div class="small text-secondary mt-1" style="font-size:0.75rem;">Viết liền, không dấu; chỉ dùng chữ, số và dấu gạch dưới.</div>
                 </div>
 
                 <div class="mb-3">
                     <label class="form-label small fw-semibold text-secondary">Email *</label>
-                    <input type="email" @bind="email" class="form-control form-control-custom" placeholder="an.nguyen@example.com" required />
+                    <input type="email" @bind="email" @bind:event="oninput" class="form-control form-control-custom" placeholder="an.nguyen@example.com" required />
                 </div>
 
                 <div class="row g-3 mb-3">
                     <div class="col-md-6">
                         <label class="form-label small fw-semibold text-secondary">Mật khẩu *</label>
-                        <input type="password" @bind="password" class="form-control form-control-custom" placeholder="••••••••" required />
+                        <input type="password" @bind="password" @bind:event="oninput" class="form-control form-control-custom" placeholder="••••••••" required />
                     </div>
                     <div class="col-md-6">
                         <label class="form-label small fw-semibold text-secondary">Số điện thoại *</label>
-                        <input type="tel" @bind="phoneNumber" class="form-control form-control-custom" placeholder="0901 234 567" required />
+                        <input type="tel" @bind="phoneNumber" @bind:event="oninput" class="form-control form-control-custom" placeholder="0901 234 567" required />
                     </div>
                 </div>
 
                 <div class="mb-3">
                     <label class="form-label small fw-semibold text-secondary">Họ và tên *</label>
-                    <input type="text" @bind="fullName" class="form-control form-control-custom" placeholder="Nguyễn Văn An" required />
+                    <input type="text" @bind="fullName" @bind:event="oninput" class="form-control form-control-custom" placeholder="Nguyễn Văn An" required />
                 </div>
 
                 <div class="mb-3">
                     <label class="form-label small fw-semibold text-secondary">Địa chỉ giao hàng</label>
-                    <input type="text" @bind="address" class="form-control form-control-custom" placeholder="123 Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh" />
+                    <input type="text" @bind="address" @bind:event="oninput" class="form-control form-control-custom" placeholder="123 Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh" />
                     <div class="small text-secondary mt-1" style="font-size:0.75rem;">Nhập đầy đủ địa chỉ để giao hàng chính xác.</div>
                 </div>
 

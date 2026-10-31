@@ -92,6 +92,7 @@ public class ProductService : IProductService
             existing.ImageUrl = product.ImageUrl;
             existing.Specifications = product.Specifications;
             existing.Description = product.Description;
+            existing.IsActive = product.IsActive;
             context.SaveChanges();
             return true;
         }
@@ -214,8 +215,8 @@ public class ProductService : IProductService
 
         return query.FirstOrDefault(o =>
             (requesterUserId != null && o.UserId == requesterUserId) ||
-            (o.UserId == null && (guestOrderId == o.Id ||
-                                  (!string.IsNullOrWhiteSpace(guestPhone) && o.ReceiverPhone == guestPhone.Trim()))));
+            (guestOrderId != null && guestOrderId == o.Id) ||
+            (!string.IsNullOrWhiteSpace(guestPhone) && o.ReceiverPhone == guestPhone.Trim()));
     }
 
     public bool UpdateOrderStatus(int orderId, string status)
@@ -283,7 +284,9 @@ public class ProductService : IProductService
         {
             if (!string.IsNullOrEmpty(requesterUserId))
             {
-                if (order.UserId != requesterUserId)
+                bool isOwner = order.UserId == requesterUserId ||
+                               (string.IsNullOrEmpty(order.UserId) && !string.IsNullOrWhiteSpace(requesterPhone) && order.ReceiverPhone == requesterPhone.Trim());
+                if (!isOwner)
                 {
                     return (false, "Bạn không có quyền thao tác trên đơn hàng này!");
                 }

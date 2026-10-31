@@ -324,7 +324,7 @@
         }
     }
 
-    private void HandleSubmitOrder()
+    private async Task HandleSubmitOrder()
     {
         if (string.IsNullOrWhiteSpace(fullName) || string.IsNullOrWhiteSpace(phoneNumber) || string.IsNullOrWhiteSpace(shippingAddress))
         {
@@ -337,8 +337,13 @@
         if (result.Success)
         {
             Cart.LastGuestOrderId = result.OrderId;
+            try
+            {
+                await JS.InvokeVoidAsync("localStorage.setItem", "electro_last_order_id", result.OrderId.ToString());
+            }
+            catch { }
             Cart.Clear();
-            Navigation.NavigateTo($"ordersuccess?orderId={result.OrderId}");
+            Navigation.NavigateTo($"ordersuccess?orderId={result.OrderId}&phone={Uri.EscapeDataString(phoneNumber.Trim())}");
         }
         else
         {

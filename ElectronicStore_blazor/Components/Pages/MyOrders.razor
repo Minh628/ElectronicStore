@@ -223,7 +223,7 @@
                                                 Hủy đơn hàng
                                             </button>
                                         }
-                                        <a href="ordersuccess?orderId=@order.Id&phone=@Uri.EscapeDataString(searchPhone)" class="btn btn-light btn-sm rounded-pill px-3 py-1 fw-semibold small border text-decoration-none">
+                                        <a href="ordersuccess?orderId=@order.Id&phone=@Uri.EscapeDataString(!string.IsNullOrWhiteSpace(searchPhone) ? searchPhone : (order.ReceiverPhone ?? ""))" class="btn btn-light btn-sm rounded-pill px-3 py-1 fw-semibold small border text-decoration-none">
                                             Xem chi tiết &rarr;
                                         </a>
                                     </div>
@@ -279,19 +279,20 @@
         if (!confirmed) return;
 
         string? currentUserId = (UserService.IsAuthenticated && UserService.CurrentUser != null) ? UserService.CurrentUser.Id : null;
-        var result = ProductService.CancelOrder(orderId, isClient: true, requesterUserId: currentUserId, requesterPhone: searchPhone);
+        string? effectivePhone = !string.IsNullOrWhiteSpace(searchPhone) ? searchPhone : UserService.CurrentUser?.PhoneNumber;
+        var result = ProductService.CancelOrder(orderId, isClient: true, requesterUserId: currentUserId, requesterPhone: effectivePhone);
         if (result.Success)
         {
             successMessage = result.Message;
             errorMessage = null;
             // Tải lại danh sách đơn hàng
-            if (UserService.IsAuthenticated && UserService.CurrentUser != null)
-            {
-                LoadUserOrders();
-            }
-            else if (!string.IsNullOrWhiteSpace(searchPhone))
+            if (!string.IsNullOrWhiteSpace(searchPhone))
             {
                 LoadOrdersByPhone();
+            }
+            else if (UserService.IsAuthenticated && UserService.CurrentUser != null)
+            {
+                LoadUserOrders();
             }
         }
         else

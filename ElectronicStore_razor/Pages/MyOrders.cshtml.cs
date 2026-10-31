@@ -37,14 +37,14 @@ public class MyOrdersModel : PageModel
                 .ThenInclude(od => od.Product)
             .AsQueryable();
 
-        if (User.Identity != null && User.Identity.IsAuthenticated)
+        if (!string.IsNullOrWhiteSpace(LookupPhone))
+        {
+            query = query.Where(o => o.ReceiverPhone == LookupPhone.Trim());
+        }
+        else if (User.Identity != null && User.Identity.IsAuthenticated)
         {
             var username = User.Identity.Name;
             query = query.Where(o => o.User != null && o.User.UserName == username);
-        }
-        else if (!string.IsNullOrWhiteSpace(LookupPhone))
-        {
-            query = query.Where(o => o.ReceiverPhone == LookupPhone.Trim());
         }
         else
         {
@@ -84,7 +84,9 @@ public class MyOrdersModel : PageModel
         // Kiểm tra quyền thao tác (Bảo mật chống tấn công IDOR)
         if (User.Identity != null && User.Identity.IsAuthenticated)
         {
-            if (order.User?.UserName != User.Identity.Name)
+            bool isOwner = order.User?.UserName == User.Identity.Name ||
+                           (string.IsNullOrEmpty(order.UserId) && !string.IsNullOrWhiteSpace(LookupPhone) && order.ReceiverPhone == LookupPhone.Trim());
+            if (!isOwner)
             {
                 AlertMessage = "Bạn không có quyền thao tác trên đơn hàng này!";
                 AlertType = "danger";

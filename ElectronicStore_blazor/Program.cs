@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using ElectronicStore_blazor.Components;
 using ElectronicStore_blazor.Data;
@@ -36,6 +37,7 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<CartService>();
 builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<AuthenticationStateProvider, BlazorAuthStateProvider>();
 
 var app = builder.Build();
 

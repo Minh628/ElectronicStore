@@ -35,11 +35,10 @@ public class OrderSuccessModel : PageModel
         if (Order != null && !User.IsInRole("Admin"))
         {
             var user = await _userManager.GetUserAsync(User);
-            var ownsOrder = user != null
-                ? Order.UserId == user.Id
-                : Order.UserId == null &&
-                  (HttpContext.Session.GetInt32("LastGuestOrderId") == targetId ||
-                   (!string.IsNullOrWhiteSpace(phone) && Order.ReceiverPhone == phone.Trim()));
+            var effectivePhone = !string.IsNullOrWhiteSpace(phone) ? phone.Trim() : user?.PhoneNumber?.Trim();
+            var ownsOrder = (user != null && Order.UserId == user.Id) ||
+                            HttpContext.Session.GetInt32("LastGuestOrderId") == targetId ||
+                            (!string.IsNullOrWhiteSpace(effectivePhone) && Order.ReceiverPhone == effectivePhone);
             if (!ownsOrder)
             {
                 return NotFound();

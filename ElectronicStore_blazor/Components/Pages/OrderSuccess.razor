@@ -179,15 +179,49 @@
 
     protected override void OnInitialized()
     {
+        LoadOrder(Cart.LastGuestOrderId);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && order == null)
+        {
+            if (!UserService.IsAuthenticated)
+            {
+                await UserService.RestoreSessionAsync(JS);
+            }
+
+            int? savedOrderId = Cart.LastGuestOrderId;
+            if (!savedOrderId.HasValue)
+            {
+                try
+                {
+                    var rawId = await JS.InvokeAsync<string?>("localStorage.getItem", "electro_last_order_id");
+                    if (int.TryParse(rawId, out int parsedId))
+                    {
+                        savedOrderId = parsedId;
+                    }
+                }
+                catch { }
+            }
+
+            LoadOrder(savedOrderId);
+            StateHasChanged();
+        }
+    }
+
+    private void LoadOrder(int? fallbackGuestOrderId)
+    {
         var targetId = OrderId ?? Id;
         if (targetId.HasValue && targetId.Value > 0)
         {
+            var effectivePhone = !string.IsNullOrWhiteSpace(Phone) ? Phone : UserService.CurrentUser?.PhoneNumber;
             order = ProductService.GetOrderById(
                 targetId.Value,
                 UserService.CurrentUser?.Id,
                 UserService.IsAdmin,
-                UserService.IsAuthenticated ? null : Cart.LastGuestOrderId,
-                UserService.IsAuthenticated ? null : Phone);
+                fallbackGuestOrderId,
+                effectivePhone);
         }
     }
 }

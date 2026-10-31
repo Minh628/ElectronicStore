@@ -1,5 +1,4 @@
 @page "/admin/products"
-@attribute [Authorize(Roles = "Admin")]
 @layout AdminLayout
 @inject IProductService ProductService
 @inject IJSRuntime JS
@@ -47,7 +46,7 @@
             <div class="admin-stat-card">
                 <div>
                     <div class="stat-label">Tổng thiết bị</div>
-                    <div class="stat-value">@totalCount</div>
+                    <div class="stat-value">@totalSystemProducts</div>
                     <div class="stat-subtext">Trong hệ thống</div>
                 </div>
                 <div class="stat-icon-wrap blue">
@@ -62,7 +61,7 @@
             <div class="admin-stat-card">
                 <div>
                     <div class="stat-label">Còn hàng</div>
-                    <div class="stat-value text-success">@products.Count(p => p.Quantity > 0)</div>
+                    <div class="stat-value text-success">@inStockCount</div>
                     <div class="stat-subtext">Đang sẵn sàng giao</div>
                 </div>
                 <div class="stat-icon-wrap green">
@@ -77,7 +76,7 @@
             <div class="admin-stat-card">
                 <div>
                     <div class="stat-label">Hết / Cảnh báo kho</div>
-                    <div class="stat-value text-danger">@products.Count(p => p.Quantity <= 5)</div>
+                    <div class="stat-value text-danger">@lowOrOutCount</div>
                     <div class="stat-subtext">Cần nhập thêm hàng</div>
                 </div>
                 <div class="stat-icon-wrap amber">
@@ -393,6 +392,9 @@
     private List<Product> products = new();
     private List<Category> categories = new();
     private int totalCount = 0;
+    private int totalSystemProducts = 0;
+    private int inStockCount = 0;
+    private int lowOrOutCount = 0;
     private int totalPages = 1;
     private int currentPage = 1;
     private const int pageSize = 10;
@@ -419,7 +421,10 @@
 
     private void LoadProducts()
     {
-        var all = ProductService.GetAllProducts();
+        var all = ProductService.GetAllAdminProducts();
+        totalSystemProducts = all.Count;
+        inStockCount = all.Count(p => p.Quantity > 0);
+        lowOrOutCount = all.Count(p => p.Quantity <= 5);
 
         if (selectedCategoryId > 0)
         {

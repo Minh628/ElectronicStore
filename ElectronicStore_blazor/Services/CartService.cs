@@ -1,17 +1,113 @@
-﻿using ElectronicStore_blazor.Models;
+using System.Text.Json;
+using Microsoft.JSInterop;
+using ElectronicStore_blazor.Models;
 using ElectronicStore_blazor.Models.Entities;
 
 namespace ElectronicStore_blazor.Services;
 
 /// <summary>
 /// Service quản lý giỏ hàng trong phiên làm việc của người dùng Blazor (Scoped)
+/// Đồng bộ tự động với localStorage để giữ giỏ hàng khi người dùng F5 (Reload trang).
 /// </summary>
 public class CartService
 {
+    private const string CartStorageKey = "electro_cart_v1";
+    private const string LastOrderStorageKey = "electro_last_order_id";
+
+    private IJSRuntime? _js;
+    private bool _isRestored = false;
+    private int? _lastGuestOrderId;
+
     public List<CartItem> Items { get; private set; } = new();
-    public int? LastGuestOrderId { get; set; }
+
+    public int? LastGuestOrderId
+    {
+        get => _lastGuestOrderId;
+        set
+        {
+            _lastGuestOrderId = value;
+            if (_js != null)
+            {
+                _ = SaveLastOrderIdAsync(_js, value);
+            }
+        }
+    }
 
     public event Action? OnChange;
+
+    /// <summary>
+    /// Khôi phục giỏ hàng và mã đơn hàng khách vãng lai gần nhất từ localStorage sau khi F5
+    /// </summary>
+    public async Task RestoreCartAsync(IJSRuntime js)
+    {
+        _js = js;
+        if (_isRestored) return;
+        _isRestored = true;
+
+        try
+        {
+            var json = await js.InvokeAsync<string?>("localStorage.getItem", CartStorageKey);
+            if (!string.IsNullOrWhiteSpace(json))
+            {
+                var savedItems = JsonSerializer.Deserialize<List<CartItem>>(json);
+                if (savedItems != null && savedItems.Count > 0)
+                {
+                    // Gộp các sản phẩm đã lưu nếu giỏ hàng hiện tại đang trống hoặc mới thêm
+                    foreach (var saved in savedItems)
+                    {
+                        if (!Items.Any(i => i.ProductId == saved.ProductId))
+                        {
+                            Items.Add(saved);
+                        }
+                    }
+                    OnChange?.Invoke();
+                }
+            }
+
+            if (_lastGuestOrderId == null)
+            {
+                var savedOrderId = await js.InvokeAsync<string?>("localStorage.getItem", LastOrderStorageKey);
+                if (int.TryParse(savedOrderId, out int parsedId) && parsedId > 0)
+                {
+                    _lastGuestOrderId = parsedId;
+                }
+            }
+        }
+        catch
+        {
+            // Bỏ qua lỗi JSInterop nếu đang ở bước prerender tĩnh
+        }
+    }
+
+    private async Task SaveCartToStorageAsync()
+    {
+        if (_js == null) return;
+        try
+        {
+            var json = JsonSerializer.Serialize(Items);
+            await _js.InvokeVoidAsync("localStorage.setItem", CartStorageKey, json);
+        }
+        catch
+        {
+            // Bỏ qua lỗi khi ngắt kết nối mạch SignalR
+        }
+    }
+
+    private async Task SaveLastOrderIdAsync(IJSRuntime js, int? orderId)
+    {
+        try
+        {
+            if (orderId.HasValue && orderId.Value > 0)
+            {
+                await js.InvokeVoidAsync("localStorage.setItem", LastOrderStorageKey, orderId.Value.ToString());
+            }
+            else
+            {
+                await js.InvokeVoidAsync("localStorage.removeItem", LastOrderStorageKey);
+            }
+        }
+        catch { }
+    }
 
     public (bool Success, string Message) AddToCart(Product product, int quantity = 1)
     {
@@ -108,5 +204,9 @@ public class CartService
 
     public decimal GetTotal() => Items.Sum(i => i.TotalPrice);
 
-    private void NotifyStateChanged() => OnChange?.Invoke();
+    private void NotifyStateChanged()
+    {
+        OnChange?.Invoke();
+        _ = SaveCartToStorageAsync();
+    }
 }

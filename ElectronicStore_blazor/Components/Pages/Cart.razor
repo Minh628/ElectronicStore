@@ -1,6 +1,7 @@
 @page "/cart"
 @inject CartService CartService
 @inject NavigationManager Navigation
+@inject IJSRuntime JS
 @implements IDisposable
 
 <PageTitle>Giỏ Hàng Của Bạn - ElectroStore</PageTitle>
@@ -104,7 +105,7 @@
                                     <!-- Stepper -->
                                     <div class="d-flex align-items-center justify-content-sm-end gap-2">
                                         <div class="input-group input-group-sm" style="width: 100px;">
-                                            <button class="btn btn-outline-secondary" type="button" @onclick="() => CartService.UpdateQuantity(item.ProductId, -1)">-</button>
+                                            <button class="btn btn-outline-secondary" type="button" @onclick="() => CartService.UpdateQuantity(item.ProductId, -1)" disabled="@(item.Quantity <= 1)">-</button>
                                             <input type="number" class="form-control text-center fw-bold bg-white" min="1" max="@item.StockQuantity" value="@item.Quantity" @onchange="(e) => OnQuantityChanged(item.ProductId, e, item.StockQuantity)" />
                                             <button class="btn btn-outline-secondary" type="button" 
                                                     @onclick="() => CartService.UpdateQuantity(item.ProductId, 1)" 
@@ -196,9 +197,10 @@
         CartService.OnChange += StateHasChanged;
     }
 
-    private void ClearCart()
+    protected override async Task OnAfterRenderAsync(bool firstRender) { if (firstRender) { await CartService.RestoreCartAsync(JS); StateHasChanged(); } }
+    private async Task ClearCart()
     {
-        CartService.Clear();
+        if (await JS.InvokeAsync<bool>("confirm", "Bạn có chắc muốn xóa tất cả sản phẩm khỏi giỏ hàng?")) CartService.Clear();
     }
 
     private void GoToCheckout()

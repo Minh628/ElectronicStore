@@ -29,16 +29,16 @@
                     <span class="badge bg-primary bg-opacity-10 text-primary fw-bold px-3 py-2 rounded-pill small position-absolute" style="top:18px; left:18px;">
                         @(product.Brand) • Chính hãng
                     </span>
-                    <img src="@activeImage" alt="@product.Name" class="img-fluid" />
+                    <img src="@activeImage" alt="@product.Name" class="img-fluid" style="@(isImageFlipped ? "transform: scaleX(-1);" : "")" />
                 </div>
                 <!-- Thumbnails -->
                 <div class="d-flex align-items-center justify-content-center gap-2">
-                    <div class="detail-thumb @(activeImage == product.ImageUrl ? "active" : "")" @onclick="() => SetActiveImage(product.ImageUrl)">
+                    <div class="detail-thumb @(!isImageFlipped ? "active" : "")" @onclick="() => SetActiveImage(product.ImageUrl, false)">
                         <img src="@product.ImageUrl" alt="Thumbnail 1" />
                     </div>
                     @if (!string.IsNullOrEmpty(product.ImageUrl))
                     {
-                        <div class="detail-thumb" @onclick="() => SetActiveImage(product.ImageUrl)">
+                        <div class="detail-thumb @(isImageFlipped ? "active" : "")" @onclick="() => SetActiveImage(product.ImageUrl, true)">
                             <img src="@product.ImageUrl" alt="Thumbnail 2" style="transform: scaleX(-1);" />
                         </div>
                     }
@@ -221,6 +221,53 @@
                 </div>
             </div>
         </div>
+
+        @if (relatedProducts.Any())
+        {
+            <!-- ================= SẢN PHẨM CÙNG DANH MỤC ================= -->
+            <div class="mb-5">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4 class="fw-bold text-dark mb-0">Sản phẩm cùng danh mục</h4>
+                    <a href="/?category=@product.CategoryId" class="small fw-semibold text-primary text-decoration-none">Xem tất cả &rarr;</a>
+                </div>
+                <div class="row g-4">
+                    @foreach (var rp in relatedProducts)
+                    {
+                        <div class="col-12 col-sm-6 col-lg-3" @key="rp.Id">
+                            <div class="electro-product-card">
+                                <a href="product/@rp.Id" class="product-img-wrapper d-block text-decoration-none">
+                                    <span class="badge-stock-top @(rp.Quantity > 0 ? "in-stock" : "out-stock")">
+                                        @(rp.Quantity > 0 ? $"Còn {rp.Quantity}" : "Hết hàng")
+                                    </span>
+                                    <img src="@(string.IsNullOrEmpty(rp.ImageUrl) ? "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9" : rp.ImageUrl)" alt="@rp.Name" />
+                                </a>
+                                <div class="product-card-body">
+                                    <div class="product-brand">@rp.Brand</div>
+                                    <h6 class="product-title">
+                                        <a href="product/@rp.Id" class="text-dark text-decoration-none">@rp.Name</a>
+                                    </h6>
+                                    <div class="product-specs">@rp.Specifications</div>
+                                    <div class="product-card-footer">
+                                        <div>
+                                            <div class="product-price-label">Giá ưu đãi</div>
+                                            <div class="product-price-value">@rp.Price.ToString("N0") đ</div>
+                                        </div>
+                                        <a href="product/@rp.Id" class="btn-add-cart text-decoration-none">Xem chi tiết</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    <div class="d-none"><div><div><table><tbody><tr><td></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     }
     else
     {
@@ -247,6 +294,8 @@
     [Parameter] public int? Id { get; set; }
 
     private Product? product;
+    private List<Product> relatedProducts = new();
+    private bool isImageFlipped = false;
     private int quantity = 1;
     private string activeImage = "";
     private string toastMessage = "";
@@ -266,10 +315,14 @@
         if (product != null)
         {
             activeImage = string.IsNullOrEmpty(product.ImageUrl) ? "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9" : product.ImageUrl;
+            isImageFlipped = false;
+            quantity = 1;
+            relatedProducts = ProductService.GetAllProducts().Where(p => p.CategoryId == product.CategoryId && p.Id != product.Id).Take(4).ToList();
         }
     }
 
-    private void SetActiveImage(string? url)
+    private void SetActiveImage(string? url, bool flip = false) { if (!string.IsNullOrEmpty(url)) { activeImage = url; isImageFlipped = flip; } }
+    private void SetActiveImageUnused(string? url)
     {
         if (!string.IsNullOrEmpty(url))
         {
@@ -325,7 +378,8 @@
     {
         if (product != null)
         {
-            Cart.AddToCart(product, quantity);
+            var res = Cart.AddToCart(product, quantity);
+            if (!res.Success && !Cart.Items.Any(i => i.ProductId == product.Id)) { toastMessage = res.Message; return; }
             Navigation.NavigateTo("checkout");
         }
     }

@@ -118,7 +118,17 @@
 
             <!-- Main Content Area -->
             <main role="main" class="admin-content-body">
-                @Body
+                @if (UserService.IsAuthenticated && UserService.IsAdmin)
+                {
+                    @Body
+                }
+                else
+                {
+                    <div class="d-flex flex-column align-items-center justify-content-center py-5 text-secondary">
+                        <div class="spinner-border text-primary mb-3" role="status"></div>
+                        <div class="small fw-semibold">Đang xác thực quyền Quản trị viên...</div>
+                    </div>
+                }
             </main>
 
             <!-- Admin Footer -->

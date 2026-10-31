@@ -218,6 +218,52 @@
             </div>
         </div>
 
+        @if (Model.RelatedProducts != null && Model.RelatedProducts.Any())
+        {
+            <div class="mb-5">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4 class="fw-bold text-dark mb-0">Sản phẩm cùng danh mục</h4>
+                    <a asp-page="/Index" asp-route-category="@p.CategoryId" class="small fw-semibold text-primary text-decoration-none">Xem tất cả &rarr;</a>
+                </div>
+                <div class="row g-4">
+                    @foreach (var rp in Model.RelatedProducts)
+                    {
+                        <div class="col-12 col-sm-6 col-lg-3">
+                            <div class="electro-product-card">
+                                <a asp-page="/ProductDetail" asp-route-id="@rp.Id" class="product-img-wrapper d-block text-decoration-none">
+                                    <span class="badge-stock-top @(rp.Quantity > 0 ? "in-stock" : "out-stock")">
+                                        @(rp.Quantity > 0 ? $"Còn {rp.Quantity}" : "Hết hàng")
+                                    </span>
+                                    <img src="@(string.IsNullOrEmpty(rp.ImageUrl) ? "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9" : rp.ImageUrl)" alt="@rp.Name" />
+                                </a>
+                                <div class="product-card-body">
+                                    <div class="product-brand">@rp.Brand</div>
+                                    <h6 class="product-title">
+                                        <a asp-page="/ProductDetail" asp-route-id="@rp.Id" class="text-dark text-decoration-none">@rp.Name</a>
+                                    </h6>
+                                    <div class="product-specs">@rp.Specifications</div>
+                                    <div class="product-card-footer">
+                                        <div>
+                                            <div class="product-price-label">Giá ưu đãi</div>
+                                            <div class="product-price-value">@rp.Price.ToString("N0") đ</div>
+                                        </div>
+                                        <a asp-page="/ProductDetail" asp-route-id="@rp.Id" class="btn-add-cart text-decoration-none">Xem chi tiết</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+        <div class="d-none"><div><div><table><tbody><tr><td></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
 
     }
 </div>

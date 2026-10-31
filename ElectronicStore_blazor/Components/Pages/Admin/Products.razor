@@ -283,11 +283,11 @@
                             <div class="row g-3 mb-3">
                                 <div class="col-12">
                                     <label class="form-label small fw-semibold text-dark">Tên thiết bị <span class="text-danger">*</span></label>
-                                    <input type="text" @bind="inputProduct.Name" class="form-control form-control-admin" placeholder="Ví dụ: iPhone 16 Pro Max 256GB" required />
+                                    <input type="text" @bind="inputProduct.Name" @bind:event="oninput" class="form-control form-control-admin" placeholder="Ví dụ: iPhone 16 Pro Max 256GB" required />
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label small fw-semibold text-dark">Hãng sản xuất <span class="text-danger">*</span></label>
-                                    <input type="text" @bind="inputProduct.Brand" class="form-control form-control-admin" placeholder="Apple, Samsung, Sony..." required />
+                                    <input type="text" @bind="inputProduct.Brand" @bind:event="oninput" class="form-control form-control-admin" placeholder="Apple, Samsung, Sony..." required />
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label small fw-semibold text-dark">Danh mục ngành hàng <span class="text-danger">*</span></label>

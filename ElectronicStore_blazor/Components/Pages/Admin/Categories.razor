@@ -153,12 +153,12 @@
                 <div class="modal-body p-4">
                     <div class="mb-3">
                         <label class="form-label small fw-semibold text-dark">Tên ngành hàng <span class="text-danger">*</span></label>
-                        <input type="text" @bind="inputCategory.Name" class="form-control form-control-admin" placeholder="Ví dụ: Điện thoại, Laptop, Phụ kiện..." required />
+                        <input type="text" @bind="inputCategory.Name" @bind:event="oninput" class="form-control form-control-admin" placeholder="Ví dụ: Điện thoại, Laptop, Phụ kiện..." required />
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label small fw-semibold text-dark">Mô tả tóm tắt</label>
-                        <textarea @bind="inputCategory.Description" rows="4" class="form-control form-control-admin" placeholder="Mô tả ngành hàng thiết bị..."></textarea>
+                        <textarea @bind="inputCategory.Description" @bind:event="oninput" rows="4" class="form-control form-control-admin" placeholder="Mô tả ngành hàng thiết bị..."></textarea>
                     </div>
                 </div>
                 <div class="modal-footer bg-light border-top px-4 py-3 d-flex justify-content-end gap-2">

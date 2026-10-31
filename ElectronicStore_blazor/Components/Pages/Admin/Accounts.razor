@@ -290,33 +290,33 @@
                 <div class="modal-body p-4">
                     <div class="mb-3">
                         <label class="form-label small fw-semibold text-dark">Tên đăng nhập (Username) <span class="text-danger">*</span></label>
-                        <input type="text" @bind="newUsername" class="form-control form-control-admin" placeholder="Ví dụ: nhanvien_sales" required />
+                        <input type="text" @bind="newUsername" @bind:event="oninput" class="form-control form-control-admin" placeholder="Ví dụ: nhanvien_sales" required />
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label small fw-semibold text-dark">Mật khẩu ban đầu <span class="text-danger">*</span></label>
-                        <input type="password" @bind="newPassword" class="form-control form-control-admin" placeholder="Tối thiểu 6 ký tự" required />
+                        <input type="password" @bind="newPassword" @bind:event="oninput" class="form-control form-control-admin" placeholder="Tối thiểu 6 ký tự" required />
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label small fw-semibold text-dark">Họ và tên</label>
-                        <input type="text" @bind="newFullName" class="form-control form-control-admin" placeholder="Ví dụ: Nguyễn Văn A" />
+                        <input type="text" @bind="newFullName" @bind:event="oninput" class="form-control form-control-admin" placeholder="Ví dụ: Nguyễn Văn A" />
                     </div>
 
                     <div class="row g-2 mb-3">
                         <div class="col-md-6">
                             <label class="form-label small fw-semibold text-dark">Email</label>
-                            <input type="email" @bind="newEmail" class="form-control form-control-admin" placeholder="email@domain.com" />
+                            <input type="email" @bind="newEmail" @bind:event="oninput" class="form-control form-control-admin" placeholder="email@domain.com" />
                         </div>
                         <div class="col-md-6">
                             <label class="form-label small fw-semibold text-dark">Số điện thoại</label>
-                            <input type="tel" @bind="newPhone" class="form-control form-control-admin" placeholder="0901234567" />
+                            <input type="tel" @bind="newPhone" @bind:event="oninput" class="form-control form-control-admin" placeholder="0901234567" />
                         </div>
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label small fw-semibold text-dark">Địa chỉ</label>
-                        <input type="text" @bind="newAddress" class="form-control form-control-admin" placeholder="Ví dụ: 123 Lê Lợi, Q.1, TP.HCM" />
+                        <input type="text" @bind="newAddress" @bind:event="oninput" class="form-control form-control-admin" placeholder="Ví dụ: 123 Lê Lợi, Q.1, TP.HCM" />
                     </div>
 
                     <div class="mb-2">
@@ -362,23 +362,23 @@
 
                     <div class="mb-3">
                         <label class="form-label small fw-semibold text-dark">Họ và tên</label>
-                        <input type="text" @bind="editFullName" class="form-control form-control-admin" placeholder="Ví dụ: Nguyễn Văn A" />
+                        <input type="text" @bind="editFullName" @bind:event="oninput" class="form-control form-control-admin" placeholder="Ví dụ: Nguyễn Văn A" />
                     </div>
 
                     <div class="row g-2 mb-3">
                         <div class="col-md-6">
                             <label class="form-label small fw-semibold text-dark">Email</label>
-                            <input type="email" @bind="editEmail" class="form-control form-control-admin" />
+                            <input type="email" @bind="editEmail" @bind:event="oninput" class="form-control form-control-admin" />
                         </div>
                         <div class="col-md-6">
                             <label class="form-label small fw-semibold text-dark">Số điện thoại</label>
-                            <input type="tel" @bind="editPhone" class="form-control form-control-admin" />
+                            <input type="tel" @bind="editPhone" @bind:event="oninput" class="form-control form-control-admin" />
                         </div>
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label small fw-semibold text-dark">Địa chỉ</label>
-                        <input type="text" @bind="editAddress" class="form-control form-control-admin" />
+                        <input type="text" @bind="editAddress" @bind:event="oninput" class="form-control form-control-admin" />
                     </div>
 
                     <div class="mb-2">

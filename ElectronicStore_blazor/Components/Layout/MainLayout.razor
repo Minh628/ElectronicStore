@@ -40,7 +40,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                     <input type="text" class="search-pill-input" placeholder="Tìm sản phẩm, thương hiệu, cấu hình..."
-                           @bind="navSearch" @onkeydown="HandleNavSearch" />
+                           @bind="navSearch" @bind:event="oninput" @onkeydown="HandleNavSearch" />
                     <span class="search-pill-shortcut">⌘ K</span>
                 </div>
 
@@ -211,21 +211,29 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender && !UserService.IsAuthenticated)
+        if (firstRender)
         {
-            var restored = await UserService.RestoreSessionAsync(JS);
-            if (restored)
+            await Cart.RestoreCartAsync(JS);
+            if (!UserService.IsAuthenticated)
             {
-                StateHasChanged();
+                await UserService.RestoreSessionAsync(JS);
             }
+            StateHasChanged();
         }
     }
 
     private void HandleNavSearch(KeyboardEventArgs e)
     {
-        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(navSearch))
+        if (e.Key == "Enter")
         {
-            Navigation.NavigateTo($"/?q={Uri.EscapeDataString(navSearch)}");
+            if (!string.IsNullOrWhiteSpace(navSearch))
+            {
+                Navigation.NavigateTo($"/?q={Uri.EscapeDataString(navSearch.Trim())}");
+            }
+            else
+            {
+                Navigation.NavigateTo("/");
+            }
         }
     }
 

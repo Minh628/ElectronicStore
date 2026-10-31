@@ -128,23 +128,23 @@
                     <div class="row g-3 mb-3">
                         <div class="col-md-6">
                             <label class="form-label small fw-semibold text-secondary">Họ và tên người nhận *</label>
-                            <input type="text" @bind="fullName" class="form-control form-control-custom" placeholder="Ví dụ: Nguyễn Văn An" required />
+                            <input type="text" @bind="fullName" @bind:event="oninput" class="form-control form-control-custom" placeholder="Ví dụ: Nguyễn Văn An" required />
                         </div>
                         <div class="col-md-6">
                             <label class="form-label small fw-semibold text-secondary">Số điện thoại *</label>
-                            <input type="tel" @bind="phoneNumber" class="form-control form-control-custom" placeholder="Ví dụ: 0901 234 567" required />
+                            <input type="tel" @bind="phoneNumber" @bind:event="oninput" class="form-control form-control-custom" placeholder="Ví dụ: 0901 234 567" required />
                         </div>
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label small fw-semibold text-secondary">Địa chỉ nhận hàng *</label>
-                        <input type="text" @bind="shippingAddress" class="form-control form-control-custom" placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố" required />
+                        <input type="text" @bind="shippingAddress" @bind:event="oninput" class="form-control form-control-custom" placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố" required />
                         <div class="small text-secondary mt-1">Vui lòng ghi rõ số nhà, tên đường, phường/xã, quận/huyện và tỉnh/thành.</div>
                     </div>
 
                     <div>
                         <label class="form-label small fw-semibold text-secondary">Ghi chú giao hàng (không bắt buộc)</label>
-                        <input type="text" @bind="notes" class="form-control form-control-custom" placeholder="Vui lòng gọi trước khi giao 30 phút..." />
+                        <input type="text" @bind="notes" @bind:event="oninput" class="form-control form-control-custom" placeholder="Vui lòng gọi trước khi giao 30 phút..." />
                     </div>
                 </div>
 
@@ -309,18 +309,22 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender && !UserService.IsAuthenticated)
+        if (firstRender)
         {
-            var restored = await UserService.RestoreSessionAsync(JS);
-            if (restored && UserService.CurrentUser != null)
+            await Cart.RestoreCartAsync(JS);
+            if (!UserService.IsAuthenticated)
             {
-                var user = UserService.CurrentUser;
-                fullName = user.FullName ?? user.UserName ?? "Khách hàng";
-                phoneNumber = user.PhoneNumber ?? "";
-                email = user.Email ?? "";
-                shippingAddress = user.Address ?? "";
-                StateHasChanged();
+                var restored = await UserService.RestoreSessionAsync(JS);
+                if (restored && UserService.CurrentUser != null)
+                {
+                    var user = UserService.CurrentUser;
+                    fullName = user.FullName ?? user.UserName ?? "Khách hàng";
+                    phoneNumber = user.PhoneNumber ?? "";
+                    email = user.Email ?? "";
+                    shippingAddress = user.Address ?? "";
+                }
             }
+            StateHasChanged();
         }
     }
 

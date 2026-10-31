@@ -49,8 +49,9 @@ public class ProductService : IProductService
     public bool BuyProduct(int id)
     {
         using var context = _contextFactory.CreateDbContext();
-        var product = context.Products.Find(id);
-        if (product != null && product.Quantity > 0)
+        // Kiểm tra cả trạng thái hoạt động của sản phẩm và danh mục cha trước khi trừ kho
+        var product = context.Products.Include(p => p.Category).FirstOrDefault(p => p.Id == id);
+        if (product != null && product.IsActive && (product.Category == null || product.Category.IsActive) && product.Quantity > 0)
         {
             product.Quantity--;
             context.SaveChanges();
@@ -168,7 +169,8 @@ public class ProductService : IProductService
         using var context = _contextFactory.CreateDbContext();
         if (category.Id == 0)
         {
-            category.IsActive = true;
+            category.Name = category.Name.Trim();
+            category.Description = category.Description?.Trim();
             context.Categories.Add(category);
         }
         else
@@ -176,11 +178,27 @@ public class ProductService : IProductService
             var existing = context.Categories.Find(category.Id);
             if (existing != null)
             {
-                existing.Name = category.Name;
-                existing.Description = category.Description;
+                existing.Name = category.Name.Trim();
+                existing.Description = category.Description?.Trim();
+                // Đồng bộ trạng thái ẩn/hiện danh mục từ Modal
+                existing.IsActive = category.IsActive;
             }
         }
         context.SaveChanges();
+    }
+
+    public bool ToggleCategoryActive(int id)
+    {
+        using var context = _contextFactory.CreateDbContext();
+        var category = context.Categories.Find(id);
+        if (category != null)
+        {
+            // Khi ẩn danh mục, toàn bộ sản phẩm thuộc danh mục này sẽ tự động bị ẩn trên trang khách hàng
+            category.IsActive = !category.IsActive;
+            context.SaveChanges();
+            return true;
+        }
+        return false;
     }
 
     public (bool Success, string Message) DeleteCategory(int id)
@@ -194,12 +212,15 @@ public class ProductService : IProductService
 
         if (category.Products.Any())
         {
-            return (false, $"Không thể xóa danh mục '{category.Name}' vì đang có {category.Products.Count} sản phẩm liên kết! Hãy chuyển hoặc xóa các sản phẩm trước.");
+            // Tự động chuyển sang trạng thái Tạm ẩn (Soft Delete) để ẩn danh mục và toàn bộ sản phẩm trực thuộc trên trang khách hàng
+            category.IsActive = false;
+            context.SaveChanges();
+            return (true, $"Danh mục '{category.Name}' đang có {category.Products.Count} sản phẩm liên kết nên được tự động chuyển sang trạng thái TẠM ẨN (ẩn toàn bộ sản phẩm thuộc danh mục trên cửa hàng) thay vì xóa vĩnh viễn.");
         }
 
         context.Categories.Remove(category);
         context.SaveChanges();
-        return (true, $"Đã xóa danh mục: {category.Name}");
+        return (true, $"Đã xóa vĩnh viễn danh mục: {category.Name}");
     }
     #endregion
 
@@ -390,13 +411,13 @@ public class ProductService : IProductService
         using var context = _contextFactory.CreateDbContext();
         using var transaction = context.Database.BeginTransaction(IsolationLevel.Serializable);
 
-        // 3. Kiểm tra tính khả dụng và tồn kho thực tế của từng sản phẩm (tránh bán khống)
+        // 3. Kiểm tra tính khả dụng của sản phẩm VÀ danh mục cha (chặn đặt hàng nếu danh mục đã bị ẩn)
         foreach (var item in items)
         {
-            var prod = context.Products.Find(item.ProductId);
-            if (prod == null || !prod.IsActive)
+            var prod = context.Products.Include(p => p.Category).FirstOrDefault(p => p.Id == item.ProductId);
+            if (prod == null || !prod.IsActive || (prod.Category != null && !prod.Category.IsActive))
             {
-                return (false, $"Sản phẩm '{item.ProductName}' hiện không còn kinh doanh!", 0);
+                return (false, $"Sản phẩm '{item.ProductName}' hoặc danh mục của sản phẩm hiện đã ngừng kinh doanh!", 0);
             }
             if (prod.Quantity < item.Quantity)
             {

@@ -25,10 +25,10 @@
                     Chỉ từ <span>29.990.000 đ</span>
                 </div>
                 <div class="d-flex flex-wrap gap-3">
-                    <a href="product/1" class="btn-hero-primary">
+                    <a href="@(categories.Any(c => c.Id == 1) ? "product/1" : "/")" class="btn-hero-primary">
                         Khám phá ngay
                     </a>
-                    <a href="product/1#specs" class="btn-hero-outline">
+                    <a href="@(categories.Any(c => c.Id == 1) ? "product/1#specs" : "/")" class="btn-hero-outline">
                         Xem thông số 
                         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
@@ -266,6 +266,8 @@
     }
 
     <!-- ================= 6. PROMOTIONAL BANNER: SONY AUDIO ================= -->
+    @if (categories.Any(c => c.Id == 4) && allProducts.Any(p => p.Id == 6))
+    {
     <section class="promo-audio-banner">
         <div class="row align-items-center g-0">
             <div class="col-lg-6 p-4 p-md-5">
@@ -290,10 +292,15 @@
             </div>
         </div>
     </section>
+    }
 
-    <!-- ================= 7. LIFESTYLE SPLIT PROMO ================= -->
+    <!-- ================= 7. LIFESTYLE SPLIT PROMO (Ẩn tự động nếu danh mục tương ứng bị ẩn) ================= -->
+    @if (categories.Any(c => c.Id == 2 || c.Id == 3))
+    {
     <section class="row g-4 mb-5">
-        <div class="col-md-6">
+        @if (categories.Any(c => c.Id == 2))
+        {
+        <div class="@(categories.Any(c => c.Id == 3) ? "col-md-6" : "col-12")">
             <a href="/?category=2" class="promo-lifestyle-card">
                 <img src="https://images.unsplash.com/photo-1517336714731-489689fd1ca8" alt="Laptop Workspace" />
                 <div class="p-4 d-flex justify-content-between align-items-center">
@@ -307,7 +314,10 @@
                 </div>
             </a>
         </div>
-        <div class="col-md-6">
+        }
+        @if (categories.Any(c => c.Id == 3))
+        {
+        <div class="@(categories.Any(c => c.Id == 2) ? "col-md-6" : "col-12")">
             <a href="/?category=3" class="promo-lifestyle-card">
                 <img src="https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0" alt="Tablet Workspace" />
                 <div class="p-4 d-flex justify-content-between align-items-center">
@@ -321,7 +331,9 @@
                 </div>
             </a>
         </div>
+        }
     </section>
+    }
 
     <!-- ================= 8. TECH INSIGHTS (GÓC NHÌN CÔNG NGHỆ) ================= -->
     <section class="mb-5">
@@ -435,16 +447,22 @@
 
     protected override void OnInitialized()
     {
-        allProducts = ProductService.GetAllProducts();
-        categories = ProductService.GetCategories().Where(c => c.IsActive).ToList();
-        brands = allProducts.Select(p => p.Brand).Distinct().OrderBy(b => b).ToList();
-
+        LoadCatalogData();
         Navigation.LocationChanged += OnLocationChanged;
         ParseQueryParameters();
     }
 
+    private void LoadCatalogData()
+    {
+        // Tải danh sách sản phẩm và danh mục đang hoạt động (tự động loại bỏ danh mục ẩn và sản phẩm thuộc danh mục ẩn)
+        allProducts = ProductService.GetAllProducts();
+        categories = ProductService.GetCategories().Where(c => c.IsActive).ToList();
+        brands = allProducts.Select(p => p.Brand).Distinct().OrderBy(b => b).ToList();
+    }
+
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
+        LoadCatalogData();
         ParseQueryParameters();
         InvokeAsync(StateHasChanged);
     }

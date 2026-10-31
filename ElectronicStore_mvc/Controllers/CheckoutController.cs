@@ -28,6 +28,13 @@ public class CheckoutController : Controller
     public async Task<IActionResult> Index()
     {
         var cart = _cartService.GetCart();
+        if (cart.Any())
+        {
+            var productIds = cart.Select(c => c.ProductId).ToList();
+            var dbProducts = await _context.Products.Include(p => p.Category).Where(p => productIds.Contains(p.Id)).ToListAsync();
+            _cartService.SyncWithProducts(dbProducts);
+            cart = _cartService.GetCart();
+        }
         if (!cart.Any())
         {
             return RedirectToAction("Index", "Cart");
@@ -92,11 +99,11 @@ public class CheckoutController : Controller
             return View("Index");
         }
 
-        // 1. Kiểm tra tính khả dụng và tồn kho thực tế của từng sản phẩm (Chống bán khống)
+        // 1. Kiểm tra tính khả dụng và tồn kho thực tế của từng sản phẩm (Chống bán khống & kiểm tra Danh mục còn hoạt động)
         foreach (var item in cart)
         {
-            var prod = await _context.Products.FindAsync(item.ProductId);
-            if (prod == null || !prod.IsActive)
+            var prod = await _context.Products.Include(p => p.Category).FirstOrDefaultAsync(p => p.Id == item.ProductId);
+            if (prod == null || !prod.IsActive || (prod.Category != null && !prod.Category.IsActive))
             {
                 ViewBag.ErrorMessage = $"Sản phẩm '{item.ProductName}' hiện không còn kinh doanh!";
                 PreserveFormData();
@@ -196,7 +203,7 @@ public class CheckoutController : Controller
     [HttpGet]
     public async Task<IActionResult> OrderSuccess(int? id, int? orderId, string? phone)
     {
-        int actualId = id ?? orderId ?? 0;
+        int actualId = id ?? orderId ?? HttpContext.Session.GetInt32("LastGuestOrderId") ?? 0;
         var order = await _context.Orders
             .Include(o => o.User)
             .Include(o => o.OrderDetails)
@@ -209,10 +216,10 @@ public class CheckoutController : Controller
             var effectivePhone = !string.IsNullOrWhiteSpace(phone) ? phone.Trim() : user?.PhoneNumber?.Trim();
             var ownsOrder = (user != null && order.UserId == user.Id) ||
                             HttpContext.Session.GetInt32("LastGuestOrderId") == actualId ||
-                            (!string.IsNullOrWhiteSpace(effectivePhone) && order.ReceiverPhone == effectivePhone);
+                            (string.IsNullOrEmpty(order.UserId) && !string.IsNullOrWhiteSpace(effectivePhone) && order.ReceiverPhone == effectivePhone);
             if (!ownsOrder)
             {
-                return NotFound();
+                order = null;
             }
         }
 

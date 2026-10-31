@@ -1,6 +1,7 @@
 @inherits LayoutComponentBase
 @inject CartService Cart
 @inject UserService UserService
+@inject IProductService ProductService
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 @implements IDisposable
@@ -104,11 +105,10 @@
     <nav class="subnav-bar">
         <div class="container d-flex justify-content-between align-items-center overflow-auto">
             <div class="d-flex align-items-center gap-1 py-1">
-                <a class="subnav-link" href="/?category=1">Điện thoại</a>
-                <a class="subnav-link" href="/?category=2">Laptop</a>
-                <a class="subnav-link" href="/?category=3">Máy tính bảng</a>
-                <a class="subnav-link" href="/?category=4">Âm thanh</a>
-                <a class="subnav-link" href="/?category=5">Phụ kiện</a>
+                @foreach (var cat in activeCategories)
+                {
+                    <a class="subnav-link" href="/?category=@cat.Id">@cat.Name</a>
+                }
             </div>
             <div class="d-none d-md-block">
                 <a class="subnav-promo" href="/?tag=deal">
@@ -202,17 +202,26 @@
 
 @code {
     private string navSearch = "";
+    private List<ElectronicStore_blazor.Models.Entities.Category> activeCategories = new();
 
     protected override void OnInitialized()
     {
         Cart.OnChange += StateHasChanged;
         UserService.OnChange += StateHasChanged;
         Navigation.LocationChanged += OnLocationChanged;
+        LoadActiveCategories();
         SyncSearchFromUri(Navigation.Uri);
+    }
+
+    private void LoadActiveCategories()
+    {
+        // Chỉ hiển thị các danh mục đang hoạt động trên thanh Sub-Nav của khách hàng
+        activeCategories = ProductService.GetCategories().Where(c => c.IsActive).ToList();
     }
 
     private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
     {
+        LoadActiveCategories();
         SyncSearchFromUri(e.Location);
         StateHasChanged();
     }

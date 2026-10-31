@@ -23,15 +23,24 @@
                     Chỉ từ <span>29.990.000 đ</span>
                 </div>
                 <div class="d-flex flex-wrap gap-3">
-                    <a asp-page="/ProductDetail" asp-route-id="1" class="btn-hero-primary">
-                        Khám phá ngay
-                    </a>
-                    <a asp-page="/ProductDetail" asp-route-id="1" class="btn-hero-outline">
-                        Xem thông số 
-                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
-                        </svg>
-                    </a>
+                    @if (Model.Categories.Any(c => c.Id == 1))
+                    {
+                        <a asp-page="/ProductDetail" asp-route-id="1" class="btn-hero-primary">
+                            Khám phá ngay
+                        </a>
+                        <a asp-page="/ProductDetail" asp-route-id="1" class="btn-hero-outline">
+                            Xem thông số 
+                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                            </svg>
+                        </a>
+                    }
+                    else
+                    {
+                        <a asp-page="/Index" class="btn-hero-primary">
+                            Khám phá ngay
+                        </a>
+                    }
                 </div>
             </div>
             <div class="col-lg-5 text-center">
@@ -278,62 +287,74 @@
     }
 
     <!-- ================= 6. PROMOTIONAL BANNER: SONY AUDIO ================= -->
-    <section class="promo-audio-banner">
-        <div class="row align-items-center g-0">
-            <div class="col-lg-6 p-4 p-md-5">
-                <span class="badge bg-primary bg-opacity-10 text-primary fw-bold px-3 py-2 rounded-pill small mb-3">
-                    ÂM THANH ĐỈNH CAO
-                </span>
-                <h2 class="fw-extrabold text-dark mb-3" style="font-size:2.4rem; letter-spacing:-0.03em;">
-                    Tắt ồn ào.<br/>Bật thế giới riêng.
-                </h2>
-                <p class="text-secondary mb-4" style="line-height:1.6;">
-                    Sony WH-1000XM5 • Chống ồn chủ động ANC chuẩn studio. Tận hưởng chất âm Hi-Res sắc nét với thời lượng pin lên đến 30 giờ liên tục.
-                </p>
-                <a asp-page="/ProductDetail" asp-route-id="6" class="btn btn-primary px-4 py-2 rounded-3 fw-semibold" style="background:var(--accent-blue); border:none;">
-                    Khám phá âm thanh
-                </a>
+    @if (Model.Categories.Any(c => c.Id == 4))
+    {
+        <section class="promo-audio-banner">
+            <div class="row align-items-center g-0">
+                <div class="col-lg-6 p-4 p-md-5">
+                    <span class="badge bg-primary bg-opacity-10 text-primary fw-bold px-3 py-2 rounded-pill small mb-3">
+                        ÂM THANH ĐỈNH CAO
+                    </span>
+                    <h2 class="fw-extrabold text-dark mb-3" style="font-size:2.4rem; letter-spacing:-0.03em;">
+                        Tắt ồn ào.<br/>Bật thế giới riêng.
+                    </h2>
+                    <p class="text-secondary mb-4" style="line-height:1.6;">
+                        Sony WH-1000XM5 • Chống ồn chủ động ANC chuẩn studio. Tận hưởng chất âm Hi-Res sắc nét với thời lượng pin lên đến 30 giờ liên tục.
+                    </p>
+                    <a asp-page="/ProductDetail" asp-route-id="6" class="btn btn-primary px-4 py-2 rounded-3 fw-semibold" style="background:var(--accent-blue); border:none;">
+                        Khám phá âm thanh
+                    </a>
+                </div>
+                <div class="col-lg-6 text-center p-3">
+                    <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e" 
+                         alt="Sony WH-1000XM5" 
+                         class="img-fluid rounded-4" 
+                         style="max-height:340px; object-fit:cover; width:92%;" />
+                </div>
             </div>
-            <div class="col-lg-6 text-center p-3">
-                <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e" 
-                     alt="Sony WH-1000XM5" 
-                     class="img-fluid rounded-4" 
-                     style="max-height:340px; object-fit:cover; width:92%;" />
-            </div>
-        </div>
-    </section>
+        </section>
+    }
 
     <!-- ================= 7. LIFESTYLE SPLIT PROMO ================= -->
-    <section class="row g-4 mb-5">
-        <div class="col-md-6">
-            <a asp-page="/Index" asp-route-CategoryId="2" class="promo-lifestyle-card">
-                <img src="https://images.unsplash.com/photo-1517336714731-489689fd1ca8" alt="Laptop Workspace" />
-                <div class="p-4 d-flex justify-content-between align-items-center">
-                    <div>
-                        <h5 class="fw-bold text-dark mb-1">Góc làm việc, đầy cảm hứng.</h5>
-                        <p class="text-secondary small mb-0">Laptop mỏng nhẹ. Hiệu năng không giới hạn.</p>
-                    </div>
-                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="text-secondary">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
-                    </svg>
+    @if (Model.Categories.Any(c => c.Id == 2 || c.Id == 3))
+    {
+        <section class="row g-4 mb-5">
+            @if (Model.Categories.Any(c => c.Id == 2))
+            {
+                <div class="@(Model.Categories.Any(c => c.Id == 3) ? "col-md-6" : "col-12")">
+                    <a asp-page="/Index" asp-route-CategoryId="2" class="promo-lifestyle-card">
+                        <img src="https://images.unsplash.com/photo-1517336714731-489689fd1ca8" alt="Laptop Workspace" />
+                        <div class="p-4 d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="fw-bold text-dark mb-1">Góc làm việc, đầy cảm hứng.</h5>
+                                <p class="text-secondary small mb-0">Laptop mỏng nhẹ. Hiệu năng không giới hạn.</p>
+                            </div>
+                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="text-secondary">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                            </svg>
+                        </div>
+                    </a>
                 </div>
-            </a>
-        </div>
-        <div class="col-md-6">
-            <a asp-page="/Index" asp-route-CategoryId="3" class="promo-lifestyle-card">
-                <img src="https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0" alt="Tablet Workspace" />
-                <div class="p-4 d-flex justify-content-between align-items-center">
-                    <div>
-                        <h5 class="fw-bold text-dark mb-1">Luôn kết nối. Luôn chuyển động.</h5>
-                        <p class="text-secondary small mb-0">Thiết bị thông minh đồng hành cho từng mục tiêu.</p>
-                    </div>
-                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="text-secondary">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
-                    </svg>
+            }
+            @if (Model.Categories.Any(c => c.Id == 3))
+            {
+                <div class="@(Model.Categories.Any(c => c.Id == 2) ? "col-md-6" : "col-12")">
+                    <a asp-page="/Index" asp-route-CategoryId="3" class="promo-lifestyle-card">
+                        <img src="https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0" alt="Tablet Workspace" />
+                        <div class="p-4 d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="fw-bold text-dark mb-1">Luôn kết nối. Luôn chuyển động.</h5>
+                                <p class="text-secondary small mb-0">Thiết bị thông minh đồng hành cho từng mục tiêu.</p>
+                            </div>
+                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="text-secondary">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                            </svg>
+                        </div>
+                    </a>
                 </div>
-            </a>
-        </div>
-    </section>
+            }
+        </section>
+    }
 
     <!-- ================= 8. TECH INSIGHTS ================= -->
     <section class="mb-5">

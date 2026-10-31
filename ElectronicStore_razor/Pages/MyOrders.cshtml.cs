@@ -43,7 +43,12 @@ public class MyOrdersModel : PageModel
 
         if (!string.IsNullOrWhiteSpace(LookupPhone))
         {
-            query = query.Where(o => o.ReceiverPhone == LookupPhone.Trim());
+            // Bảo mật: không lộ đơn của tài khoản thành viên khác khi tra cứu bằng SĐT
+            var currentUser = (User.Identity != null && User.Identity.IsAuthenticated) ? await _userManager.GetUserAsync(User) : null;
+            var currentUserId = currentUser?.Id;
+            var phoneTrim = LookupPhone.Trim();
+            query = query.Where(o => o.ReceiverPhone == phoneTrim &&
+                                     (string.IsNullOrEmpty(o.UserId) || (currentUserId != null && o.UserId == currentUserId)));
         }
         else if (User.Identity != null && User.Identity.IsAuthenticated)
         {

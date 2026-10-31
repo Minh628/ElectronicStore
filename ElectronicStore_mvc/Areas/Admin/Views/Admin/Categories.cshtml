@@ -120,14 +120,43 @@
                                 </span>
                             </td>
                             <td>
-                                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 small fw-semibold">
-                                    Hoạt động
-                                </span>
+                                <form method="post" asp-action="ToggleCategoryStatus" asp-route-id="@c.Id" class="d-inline">
+                                    <input type="hidden" name="search" value="@searchKeyword" />
+                                    <button type="submit" class="border-0 bg-transparent p-0" title="Bấm để bật/tắt hiển thị danh mục và toàn bộ sản phẩm thuộc danh mục này">
+                                        @if (c.IsActive)
+                                        {
+                                            <span class="badge-pill-status completed">
+                                                <span class="status-dot"></span>
+                                                <span>Hoạt động</span>
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge-pill-status cancelled">
+                                                <span class="status-dot"></span>
+                                                <span>Tạm ẩn</span>
+                                            </span>
+                                        }
+                                    </button>
+                                </form>
                             </td>
                             <td class="pe-4 text-end">
                                 <div class="d-inline-flex gap-1">
+                                    <form method="post" asp-action="ToggleCategoryStatus" asp-route-id="@c.Id" class="d-inline">
+                                        <input type="hidden" name="search" value="@searchKeyword" />
+                                        <button type="submit" class="admin-action-btn" title="@(c.IsActive ? "Tạm ẩn danh mục & sản phẩm" : "Hiển thị lại danh mục & sản phẩm")">
+                                            @if (c.IsActive)
+                                            {
+                                                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
+                                            }
+                                            else
+                                            {
+                                                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                            }
+                                        </button>
+                                    </form>
                                     <button type="button" class="admin-action-btn edit" title="Sửa danh mục"
-                                            onclick="openEditCategoryModal(@c.Id, '@Html.Raw(c.Name.Replace("'", "\\'"))', '@Html.Raw((c.Description ?? "").Replace("'", "\\'"))')">
+                                            onclick="openEditCategoryModal(@c.Id, '@Html.Raw(c.Name.Replace("'", "\\'"))', '@Html.Raw((c.Description ?? "").Replace("'", "\\'"))', @(c.IsActive ? "true" : "false"))">
                                         <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                     </button>
                                     <form method="post" asp-action="DeleteCategory" asp-route-id="@c.Id" class="d-inline">
@@ -174,6 +203,14 @@
                         <label class="form-label small fw-semibold text-dark">Mô tả tóm tắt</label>
                         <textarea id="modalCatDesc" name="Description" rows="4" class="form-control form-control-admin" placeholder="Mô tả ngành hàng thiết bị..."></textarea>
                     </div>
+
+                    <div>
+                        <label class="form-label small fw-semibold text-dark">Trạng thái hiển thị</label>
+                        <select id="modalCatIsActive" name="IsActive" class="form-select form-select-admin">
+                            <option value="true">Hoạt động (Hiển thị danh mục & sản phẩm trên trang bán hàng)</option>
+                            <option value="false">Tạm ẩn (Ẩn danh mục & toàn bộ sản phẩm khỏi trang khách hàng)</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="modal-footer bg-light border-top px-4 py-3 d-flex justify-content-end gap-2">
                     <button type="button" class="btn btn-outline-secondary rounded-3 px-4 py-2 fw-semibold" data-bs-dismiss="modal">Hủy bỏ</button>
@@ -202,15 +239,17 @@
         document.getElementById('modalCatId').value = 0;
         document.getElementById('modalCatName').value = '';
         document.getElementById('modalCatDesc').value = '';
+        document.getElementById('modalCatIsActive').value = 'true';
         document.getElementById('modalCatSubmitBtnText').innerText = 'Lưu Danh Mục';
         categoryModalInstance.show();
     }
 
-    function openEditCategoryModal(id, name, desc) {
+    function openEditCategoryModal(id, name, desc, isActive) {
         document.getElementById('catModalTitleText').innerText = 'Cập Nhật Danh Mục: ' + name;
         document.getElementById('modalCatId').value = id;
         document.getElementById('modalCatName').value = name;
         document.getElementById('modalCatDesc').value = desc;
+        document.getElementById('modalCatIsActive').value = isActive ? 'true' : 'false';
         document.getElementById('modalCatSubmitBtnText').innerText = 'Cập Nhật';
         categoryModalInstance.show();
     }

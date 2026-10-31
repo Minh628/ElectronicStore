@@ -53,8 +53,8 @@ public class ProductDetailModel : PageModel
 
     public async Task<IActionResult> OnPostAddToCartAsync(int id, int quantity = 1)
     {
-        var product = await _context.Products.FindAsync(id);
-        if (product == null || !product.IsActive)
+        var product = await _context.Products.Include(p => p.Category).FirstOrDefaultAsync(p => p.Id == id);
+        if (product == null || !product.IsActive || (product.Category != null && !product.Category.IsActive))
         {
             return RedirectToPage("/Index");
         }
@@ -68,8 +68,8 @@ public class ProductDetailModel : PageModel
     /// </summary>
     public async Task<IActionResult> OnPostAddToCartAjaxAsync(int productId, int quantity = 1)
     {
-        var product = await _context.Products.FindAsync(productId);
-        if (product == null || !product.IsActive)
+        var product = await _context.Products.Include(p => p.Category).FirstOrDefaultAsync(p => p.Id == productId);
+        if (product == null || !product.IsActive || (product.Category != null && !product.Category.IsActive))
         {
             return new JsonResult(new { success = false, message = "Sản phẩm không tồn tại hoặc đã ngừng kinh doanh!" });
         }

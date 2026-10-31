@@ -225,7 +225,7 @@
                                 <div class="small text-secondary" style="max-width: 480px;">
                                     <div><strong>@(order.ReceiverName ?? order.User?.FullName)</strong> • @(order.ReceiverPhone ?? order.User?.PhoneNumber)</div>
                                     <div class="text-truncate">@order.ShippingAddress</div>
-                                    <div class="text-muted">Thanh toán: @order.PaymentMethod • Miễn phí giao hàng</div>
+                                    <div class="text-muted">Thanh toán: @(order.PaymentMethod switch { "COD" => "Thanh toán khi nhận hàng (COD)", "BankTransfer" => "Chuyển khoản VietQR", "VNPAY" => "Cổng VNPAY-QR", "MOMO" => "Ví điện tử MoMo", _ => order.PaymentMethod }) • Miễn phí giao hàng</div>
                                 </div>
 
                                 <div class="text-end">

@@ -186,6 +186,10 @@
                             </td>
                             <td>
                                 <span class="text-secondary small fw-medium">@p.Category?.Name</span>
+                                @if (p.Category != null && !p.Category.IsActive)
+                                {
+                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle ms-1" style="font-size:0.65rem;">DM ẩn</span>
+                                }
                             </td>
                             <td>
                                 <span class="fw-bold text-dark">@p.Price.ToString("N0") ₫</span>
@@ -209,11 +213,18 @@
                             </td>
                             <td>
                                 <button type="button" class="border-0 bg-transparent p-0" title="Bấm để bật/tắt hiển thị" @onclick="() => ToggleActive(p)">
-                                    @if (p.IsActive)
+                                    @if (p.IsActive && (p.Category == null || p.Category.IsActive))
                                     {
                                         <span class="badge-pill-status completed">
                                             <span class="status-dot"></span>
                                             <span>Đang bán</span>
+                                        </span>
+                                    }
+                                    else if (p.IsActive && p.Category != null && !p.Category.IsActive)
+                                    {
+                                        <span class="badge-pill-status cancelled" title="Đang ẩn trên trang khách hàng vì danh mục cha đang tạm ẩn">
+                                            <span class="status-dot"></span>
+                                            <span>Ẩn theo DM</span>
                                         </span>
                                     }
                                     else

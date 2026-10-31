@@ -52,6 +52,13 @@ public class CheckoutModel : PageModel
     public async Task<IActionResult> OnGetAsync()
     {
         CartItems = _cartService.GetCart();
+        if (CartItems.Count > 0)
+        {
+            var productIds = CartItems.Select(c => c.ProductId).ToList();
+            var dbProducts = await _context.Products.Include(p => p.Category).Where(p => productIds.Contains(p.Id)).ToListAsync();
+            _cartService.SyncWithProducts(dbProducts);
+            CartItems = _cartService.GetCart();
+        }
         if (CartItems.Count == 0)
         {
             return RedirectToPage("/Cart");
@@ -101,11 +108,11 @@ public class CheckoutModel : PageModel
             return Page();
         }
 
-        // 1. Kiểm tra tính khả dụng và tồn kho thực tế của từng sản phẩm (Chống bán khống)
+        // 1. Kiểm tra tính khả dụng và tồn kho thực tế của từng sản phẩm (Chống bán khống & kiểm tra Danh mục còn hoạt động)
         foreach (var item in CartItems)
         {
-            var prod = await _context.Products.FindAsync(item.ProductId);
-            if (prod == null || !prod.IsActive)
+            var prod = await _context.Products.Include(p => p.Category).FirstOrDefaultAsync(p => p.Id == item.ProductId);
+            if (prod == null || !prod.IsActive || (prod.Category != null && !prod.Category.IsActive))
             {
                 ErrorMessage = $"Sản phẩm '{item.ProductName}' hiện không còn kinh doanh!";
                 return Page();

@@ -22,10 +22,10 @@ public class OrderSuccessModel : PageModel
 
     public Order? Order { get; set; }
 
-    // Hỗ trợ nhận cả 2 dạng query string: ?orderId=123 hoặc ?id=123
+    // Hỗ trợ nhận cả 2 dạng query string: ?orderId=123 hoặc ?id=123 (và fallback về đơn vừa đặt trong phiên)
     public async Task<IActionResult> OnGetAsync(int? orderId, int? id, string? phone)
     {
-        var targetId = orderId ?? id ?? 0;
+        var targetId = orderId ?? id ?? HttpContext.Session.GetInt32("LastGuestOrderId") ?? 0;
         Order = await _context.Orders
             .Include(o => o.User)
             .Include(o => o.OrderDetails)
@@ -38,10 +38,10 @@ public class OrderSuccessModel : PageModel
             var effectivePhone = !string.IsNullOrWhiteSpace(phone) ? phone.Trim() : user?.PhoneNumber?.Trim();
             var ownsOrder = (user != null && Order.UserId == user.Id) ||
                             HttpContext.Session.GetInt32("LastGuestOrderId") == targetId ||
-                            (!string.IsNullOrWhiteSpace(effectivePhone) && Order.ReceiverPhone == effectivePhone);
+                            (string.IsNullOrEmpty(Order.UserId) && !string.IsNullOrWhiteSpace(effectivePhone) && Order.ReceiverPhone == effectivePhone);
             if (!ownsOrder)
             {
-                return NotFound();
+                Order = null;
             }
         }
 

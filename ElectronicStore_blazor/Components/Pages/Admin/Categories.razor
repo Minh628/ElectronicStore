@@ -98,7 +98,7 @@
                     }
                     @foreach (var c in FilteredCategories)
                     {
-                        <tr>
+                        <tr class="@(!c.IsActive ? "opacity-75 bg-light" : "")">
                             <td class="ps-4 text-secondary small fw-bold">#@c.Id</td>
                             <td>
                                 <div class="text-dark fw-bold">@c.Name</div>
@@ -112,12 +112,36 @@
                                 </span>
                             </td>
                             <td>
-                                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 small fw-semibold">
-                                    Hoạt động
-                                </span>
+                                <!-- Nút bật/tắt nhanh trạng thái danh mục: khi ẩn danh mục sẽ ẩn toàn bộ sản phẩm trực thuộc trên trang khách hàng -->
+                                <button type="button" class="border-0 bg-transparent p-0" title="Bấm để bật/tắt hiển thị danh mục và sản phẩm" @onclick="() => ToggleCategoryActive(c)">
+                                    @if (c.IsActive)
+                                    {
+                                        <span class="badge-pill-status completed">
+                                            <span class="status-dot"></span>
+                                            <span>Hoạt động</span>
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge-pill-status cancelled">
+                                            <span class="status-dot"></span>
+                                            <span>Tạm ẩn</span>
+                                        </span>
+                                    }
+                                </button>
                             </td>
                             <td class="pe-4 text-end">
                                 <div class="d-inline-flex gap-1">
+                                    <button type="button" class="admin-action-btn edit" title="@(c.IsActive ? "Tạm ẩn danh mục & sản phẩm" : "Hiện lại danh mục & sản phẩm")" @onclick="() => ToggleCategoryActive(c)">
+                                        @if (c.IsActive)
+                                        {
+                                            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
+                                        }
+                                        else
+                                        {
+                                            <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                        }
+                                    </button>
                                     <button type="button" class="admin-action-btn edit" title="Sửa danh mục" @onclick="() => EditCategory(c)">
                                         <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                     </button>
@@ -160,6 +184,13 @@
                         <label class="form-label small fw-semibold text-dark">Mô tả tóm tắt</label>
                         <textarea @bind="inputCategory.Description" @bind:event="oninput" rows="4" class="form-control form-control-admin" placeholder="Mô tả ngành hàng thiết bị..."></textarea>
                     </div>
+
+                    <div class="form-check form-switch mt-3">
+                        <input class="form-check-input" type="checkbox" id="catActiveSwitch" @bind="inputCategory.IsActive" />
+                        <label class="form-check-label small fw-semibold text-dark" for="catActiveSwitch">
+                            Hiển thị danh mục &amp; các sản phẩm trực thuộc trên cửa hàng
+                        </label>
+                    </div>
                 </div>
                 <div class="modal-footer bg-light border-top px-4 py-3 d-flex justify-content-end gap-2">
                     <button type="button" class="btn btn-outline-secondary rounded-3 px-4 py-2 fw-semibold" @onclick="() => showModal = false">Hủy bỏ</button>
@@ -200,6 +231,20 @@
     {
         inputCategory = new Category { Id = 0, Name = "", IsActive = true };
         showModal = true;
+    }
+
+    private void ToggleCategoryActive(Category c)
+    {
+        if (ProductService.ToggleCategoryActive(c.Id))
+        {
+            LoadCategories();
+            var updated = categories.FirstOrDefault(x => x.Id == c.Id);
+            bool isNowActive = updated?.IsActive ?? !c.IsActive;
+            alertMessage = isNowActive
+                ? $"Đã bật hiển thị danh mục '{c.Name}' và các sản phẩm trực thuộc trên cửa hàng!"
+                : $"Đã tạm ẩn danh mục '{c.Name}'! Toàn bộ sản phẩm thuộc danh mục này đã được ẩn khỏi trang khách hàng.";
+            alertType = isNowActive ? "success" : "warning";
+        }
     }
 
     private void EditCategory(Category c)
@@ -247,8 +292,8 @@
         var result = ProductService.DeleteCategory(id);
         if (result.Success)
         {
-            alertMessage = "Đã xóa danh mục thành công!";
-            alertType = "success";
+            alertMessage = result.Message;
+            alertType = result.Message.Contains("TẠM ẨN") ? "warning" : "success";
             LoadCategories();
         }
         else

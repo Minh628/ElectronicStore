@@ -22,6 +22,7 @@ public interface IProductService
     List<Category> GetCategories();
     void SaveCategory(Category category);
     (bool Success, string Message) DeleteCategory(int id);
+    bool ToggleCategoryActive(int id);
 
     // 4. Phục vụ quản lý đơn hàng
     List<Order> GetOrders(string? status = null);

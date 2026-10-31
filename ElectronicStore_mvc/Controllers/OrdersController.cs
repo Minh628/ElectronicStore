@@ -31,11 +31,15 @@ public class OrdersController : Controller
                 .ThenInclude(od => od.Product)
             .AsQueryable();
 
-        // 1. Nếu khách chủ động nhập SĐT vào ô tra cứu nhanh thì lọc theo SĐT nhận hàng
+        // 1. Nếu khách chủ động nhập SĐT vào ô tra cứu nhanh thì lọc theo SĐT nhận hàng (bảo mật: không lộ đơn của tài khoản thành viên khác)
         if (!string.IsNullOrWhiteSpace(phoneNumber))
         {
-            query = query.Where(o => o.ReceiverPhone == phoneNumber.Trim());
-            ViewBag.PhoneNumber = phoneNumber.Trim();
+            var currentUser = (User.Identity != null && User.Identity.IsAuthenticated) ? await _userManager.GetUserAsync(User) : null;
+            var currentUserId = currentUser?.Id;
+            var phoneTrim = phoneNumber.Trim();
+            query = query.Where(o => o.ReceiverPhone == phoneTrim &&
+                                     (string.IsNullOrEmpty(o.UserId) || (currentUserId != null && o.UserId == currentUserId)));
+            ViewBag.PhoneNumber = phoneTrim;
         }
         // 2. Ngược lại nếu đã đăng nhập, lọc theo UserId của tài khoản Identity
         else if (User.Identity != null && User.Identity.IsAuthenticated)

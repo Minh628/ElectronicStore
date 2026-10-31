@@ -27,46 +27,59 @@
         </div>
     </div>
 
-    <!-- Celebration Checkmark -->
-    <div class="text-center mb-4">
-        <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3" 
-             style="width: 72px; height: 72px; background: #dcfce7; color: #16a34a;">
-            <svg width="36" height="36" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
-            </svg>
-        </div>
-        <h2 class="fw-bold text-dark mb-2" style="font-size:2.2rem; letter-spacing:-0.02em;">Đặt hàng thành công!</h2>
-        <p class="text-secondary small mb-3">
-            Cảm ơn @(order?.ReceiverName ?? "bạn"). Công nghệ mới đang trên đường đến với bạn.
-        </p>
-
-        @if (order != null)
+    <!-- Tiêu đề trạng thái đơn hàng theo ngữ cảnh thực tế -->
+    @if (order != null)
+    {
+        var normStatus = NormalizeStatus(order.OrderStatus);
+        var statusClass = normStatus switch
         {
-            var normStatus = NormalizeStatus(order.OrderStatus);
-            var statusClass = normStatus switch
+            "Pending" => "status-pending",
+            "Confirmed" => "status-confirmed",
+            "Shipping" => "status-shipping",
+            "Completed" => "status-completed",
+            "Cancelled" => "status-cancelled",
+            _ => "status-pending"
+        };
+        var statusLabel = normStatus switch
+        {
+            "Pending" => "Chờ duyệt",
+            "Confirmed" => "Đã duyệt",
+            "Shipping" => "Đang giao",
+            "Completed" => "Hoàn thành",
+            "Cancelled" => "Đã hủy",
+            _ => order.OrderStatus
+        };
+        <div class="text-center mb-4">
+            @if (normStatus == "Cancelled")
             {
-                "Pending" => "status-pending",
-                "Confirmed" => "status-confirmed",
-                "Shipping" => "status-shipping",
-                "Completed" => "status-completed",
-                "Cancelled" => "status-cancelled",
-                _ => "status-pending"
-            };
-            var statusLabel = normStatus switch
+                <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3"
+                     style="width: 72px; height: 72px; background: #fee2e2; color: #dc2626;">
+                    <svg width="36" height="36" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </div>
+                <h2 class="fw-bold text-dark mb-2" style="font-size:2.2rem; letter-spacing:-0.02em;">Đơn hàng đã hủy</h2>
+                <p class="text-secondary small mb-3">Đơn hàng này đã được hủy và hoàn trả số lượng tồn kho.</p>
+            }
+            else
             {
-                "Pending" => "Chờ duyệt",
-                "Confirmed" => "Đã duyệt",
-                "Shipping" => "Đang giao",
-                "Completed" => "Hoàn thành",
-                "Cancelled" => "Đã hủy",
-                _ => order.OrderStatus
-            };
+                <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3" 
+                     style="width: 72px; height: 72px; background: #dcfce7; color: #16a34a;">
+                    <svg width="36" height="36" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                    </svg>
+                </div>
+                <h2 class="fw-bold text-dark mb-2" style="font-size:2.2rem; letter-spacing:-0.02em;">Đặt hàng thành công!</h2>
+                <p class="text-secondary small mb-3">
+                    Cảm ơn @(order.ReceiverName ?? "bạn"). Công nghệ mới đang trên đường đến với bạn.
+                </p>
+            }
             <div class="d-inline-flex align-items-center gap-2 small">
                 <span class="fw-bold text-dark">Mã đơn hàng #ES@(order.Id.ToString("D7"))</span>
                 <span class="demo-badge-status @statusClass">@statusLabel</span>
             </div>
-        }
-    </div>
+        </div>
+    }
 
     <!-- Receipt Card -->
     <div class="bg-white border rounded-4 p-4 p-md-5 mx-auto shadow-sm mb-4" style="max-width: 780px;">
@@ -127,8 +140,13 @@
                 <div class="col-sm-6">
                     <div class="fw-bold text-dark text-uppercase mb-2" style="font-size:0.75rem; letter-spacing:0.05em;">Thanh toán & Giao hàng</div>
                     <div class="fw-bold text-dark mb-1">
-                        @(order.PaymentMethod == "COD" ? "Thanh toán khi nhận hàng (COD)" : 
-                          order.PaymentMethod == "BankTransfer" ? "Chuyển khoản VietQR" : order.PaymentMethod)
+                        @(order.PaymentMethod switch {
+                            "COD" => "COD (Thanh toán khi nhận hàng)",
+                            "BankTransfer" => "Chuyển khoản ngân hàng (VietQR)",
+                            "VNPAY" => "Cổng thanh toán VNPAY",
+                            "MOMO" => "Ví điện tử MoMo",
+                            _ => order.PaymentMethod
+                        })
                     </div>
                     <div class="text-success fw-semibold mb-1">
                         Dự kiến nhận: @order.OrderDate.AddDays(2).ToString("dd/MM") – @order.OrderDate.AddDays(4).ToString("dd/MM/yyyy")

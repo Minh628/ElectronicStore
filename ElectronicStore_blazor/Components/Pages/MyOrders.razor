@@ -208,7 +208,7 @@
                                 <div class="small text-secondary" style="max-width: 480px;">
                                     <div><strong>@order.ReceiverName</strong> • @order.ReceiverPhone</div>
                                     <div class="text-truncate">@order.ShippingAddress</div>
-                                    <div class="text-muted">Thanh toán: @order.PaymentMethod • Miễn phí giao hàng</div>
+                                    <div class="text-muted">Thanh toán: @FormatPaymentMethod(order.PaymentMethod) • Miễn phí giao hàng</div>
                                 </div>
 
                                 <div class="text-end">
@@ -352,16 +352,28 @@
             .ToList();
     }
 
+    private static string FormatPaymentMethod(string? method) => method switch
+    {
+        "COD" => "COD (Thanh toán khi nhận hàng)",
+        "BankTransfer" => "Chuyển khoản ngân hàng (VietQR)",
+        "VNPAY" => "Cổng thanh toán VNPAY",
+        "MOMO" => "Ví điện tử MoMo",
+        _ => method ?? "COD"
+    };
+
     private void LoadOrdersByPhone()
     {
         if (string.IsNullOrWhiteSpace(searchPhone)) return;
 
         using var context = DbFactory.CreateDbContext();
+        var currentUserId = (UserService.IsAuthenticated && UserService.CurrentUser != null) ? UserService.CurrentUser.Id : null;
+        var phoneTrim = searchPhone.Trim();
+        // Bảo mật quyền riêng tư: chỉ hiển thị đơn vãng lai hoặc đơn thuộc chính tài khoản đang đăng nhập
         orders = context.Orders
             .Include(o => o.User)
             .Include(o => o.OrderDetails)
                 .ThenInclude(od => od.Product)
-            .Where(o => o.ReceiverPhone == searchPhone.Trim())
+            .Where(o => o.ReceiverPhone == phoneTrim && (string.IsNullOrEmpty(o.UserId) || (currentUserId != null && o.UserId == currentUserId)))
             .OrderByDescending(o => o.OrderDate)
             .ToList();
         activeTab = "All";

@@ -211,7 +211,6 @@ public class AdminController : Controller
         {
             category.Name = category.Name.Trim();
             category.Description = category.Description?.Trim();
-            category.IsActive = true;
             _context.Categories.Add(category);
             TempData["SuccessMessage"] = $"Đã thêm danh mục mới: {category.Name}";
         }
@@ -222,10 +221,28 @@ public class AdminController : Controller
             {
                 existing.Name = category.Name.Trim();
                 existing.Description = category.Description?.Trim();
+                existing.IsActive = category.IsActive;
                 TempData["SuccessMessage"] = $"Đã cập nhật danh mục: {existing.Name}";
             }
         }
         await _context.SaveChangesAsync();
+        return RedirectToAction(nameof(Categories), new { search });
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> ToggleCategoryStatus(int id, string? search)
+    {
+        var category = await _context.Categories.Include(c => c.Products).FirstOrDefaultAsync(c => c.Id == id);
+        if (category != null)
+        {
+            // Đảo trạng thái hiển thị của danh mục; khi ẩn danh mục thì toàn bộ sản phẩm thuộc danh mục đó cũng tự động ẩn trên trang End-User
+            category.IsActive = !category.IsActive;
+            await _context.SaveChangesAsync();
+            var prodCount = category.Products?.Count ?? 0;
+            TempData["SuccessMessage"] = category.IsActive
+                ? $"Đã hiển thị lại danh mục '{category.Name}' và các sản phẩm thuộc danh mục này trên trang bán hàng!"
+                : $"Đã tạm ẩn danh mục '{category.Name}' cùng toàn bộ {prodCount} sản phẩm thuộc danh mục này khỏi trang khách hàng!";
+        }
         return RedirectToAction(nameof(Categories), new { search });
     }
 
@@ -237,13 +254,16 @@ public class AdminController : Controller
         {
             if (category.Products.Count > 0)
             {
-                TempData["ErrorMessage"] = $"Không thể xóa danh mục '{category.Name}' vì đang có {category.Products.Count} sản phẩm liên kết!";
+                // Nếu danh mục đang chứa sản phẩm -> Tự động chuyển sang Tạm ẩn (Soft Delete) để ẩn toàn bộ sản phẩm liên kết trên trang End-User
+                category.IsActive = false;
+                await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = $"Danh mục '{category.Name}' đang có {category.Products.Count} sản phẩm liên kết nên đã được chuyển sang trạng thái TẠM ẨN (toàn bộ sản phẩm thuộc danh mục này cũng được ẩn khỏi trang khách hàng).";
             }
             else
             {
                 _context.Categories.Remove(category);
                 await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = $"Đã xóa danh mục '{category.Name}'.";
+                TempData["SuccessMessage"] = $"Đã xóa vĩnh viễn danh mục '{category.Name}'.";
             }
         }
         return RedirectToAction(nameof(Categories), new { search });

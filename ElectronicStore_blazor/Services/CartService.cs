@@ -221,7 +221,7 @@ public class CartService
         for (int i = Items.Count - 1; i >= 0; i--)
         {
             var item = Items[i];
-            if (!productMap.TryGetValue(item.ProductId, out var p) || !p.IsActive || p.Quantity <= 0)
+            if (!productMap.TryGetValue(item.ProductId, out var p) || !p.IsActive || (p.Category != null && !p.Category.IsActive) || p.Quantity <= 0)
             {
                 Items.RemoveAt(i);
                 changed = true;

@@ -326,6 +326,8 @@
 
     protected override void OnInitialized()
     {
+        // Đồng bộ giỏ hàng để tự động loại bỏ sản phẩm vừa bị ẩn hoặc thuộc danh mục bị ẩn
+        Cart.SyncWithProducts(ProductService.GetAllProducts());
         if (UserService.IsAuthenticated && UserService.CurrentUser != null)
         {
             var user = UserService.CurrentUser;
@@ -341,6 +343,7 @@
         if (firstRender)
         {
             await Cart.RestoreCartAsync(JS);
+            Cart.SyncWithProducts(ProductService.GetAllProducts());
             if (!UserService.IsAuthenticated)
             {
                 var restored = await UserService.RestoreSessionAsync(JS);

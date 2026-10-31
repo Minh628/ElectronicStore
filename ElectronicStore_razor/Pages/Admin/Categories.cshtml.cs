@@ -58,7 +58,8 @@ public class CategoriesModel : PageModel
 
         if (InputCategory.Id == 0)
         {
-            InputCategory.IsActive = true;
+            InputCategory.Name = InputCategory.Name.Trim();
+            InputCategory.Description = InputCategory.Description?.Trim();
             _context.Categories.Add(InputCategory);
             AlertMessage = $"Đã thêm danh mục mới: {InputCategory.Name}";
             AlertType = "success";
@@ -70,12 +71,30 @@ public class CategoriesModel : PageModel
             {
                 existing.Name = InputCategory.Name.Trim();
                 existing.Description = InputCategory.Description?.Trim();
+                existing.IsActive = InputCategory.IsActive;
                 AlertMessage = $"Đã cập nhật danh mục: {existing.Name}";
                 AlertType = "success";
             }
         }
 
         await _context.SaveChangesAsync();
+        return RedirectToPage(new { SearchKeyword });
+    }
+
+    public async Task<IActionResult> OnPostToggleActiveAsync(int id)
+    {
+        var category = await _context.Categories.Include(c => c.Products).FirstOrDefaultAsync(c => c.Id == id);
+        if (category != null)
+        {
+            // Đảo trạng thái hiển thị của danh mục; khi ẩn danh mục thì toàn bộ sản phẩm thuộc danh mục đó cũng tự động ẩn trên trang End-User
+            category.IsActive = !category.IsActive;
+            await _context.SaveChangesAsync();
+            var prodCount = category.Products?.Count ?? 0;
+            AlertMessage = category.IsActive
+                ? $"Đã hiển thị lại danh mục '{category.Name}' và các sản phẩm thuộc danh mục này trên trang bán hàng!"
+                : $"Đã tạm ẩn danh mục '{category.Name}' cùng toàn bộ {prodCount} sản phẩm thuộc danh mục này khỏi trang khách hàng!";
+            AlertType = "success";
+        }
         return RedirectToPage(new { SearchKeyword });
     }
 
@@ -89,14 +108,17 @@ public class CategoriesModel : PageModel
         {
             if (category.Products.Count > 0)
             {
-                AlertMessage = $"Không thể xóa danh mục '{category.Name}' vì đang có {category.Products.Count} sản phẩm liên kết! Hãy chuyển hoặc xóa các sản phẩm trước.";
-                AlertType = "warning";
+                // Nếu danh mục đang chứa sản phẩm -> Tự động chuyển sang Tạm ẩn (Soft Delete) để ẩn toàn bộ sản phẩm liên kết trên trang End-User
+                category.IsActive = false;
+                await _context.SaveChangesAsync();
+                AlertMessage = $"Danh mục '{category.Name}' đang có {category.Products.Count} sản phẩm liên kết nên đã được chuyển sang trạng thái TẠM ẨN (toàn bộ sản phẩm thuộc danh mục này cũng được ẩn khỏi trang khách hàng).";
+                AlertType = "success";
             }
             else
             {
                 _context.Categories.Remove(category);
                 await _context.SaveChangesAsync();
-                AlertMessage = $"Đã xóa danh mục: {category.Name}";
+                AlertMessage = $"Đã xóa vĩnh viễn danh mục: {category.Name}";
                 AlertType = "success";
             }
         }

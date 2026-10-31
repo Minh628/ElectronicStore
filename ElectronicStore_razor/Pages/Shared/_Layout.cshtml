@@ -1,9 +1,12 @@
 @inject ElectronicStore_razor.Services.CartService CartService
+@inject ElectronicStore_razor.Data.ElectronicStoreDbContext DbContext
 @inject Microsoft.AspNetCore.Identity.UserManager<ElectronicStore_razor.Models.Entities.ApplicationUser> UserManager
 @{
     var currentUser = (User.Identity != null && User.Identity.IsAuthenticated) ? await UserManager.GetUserAsync(User) : null;
     var displayFullName = !string.IsNullOrWhiteSpace(currentUser?.FullName) ? currentUser.FullName : (User.Identity?.Name ?? "Thành viên");
     var displayEmail = !string.IsNullOrWhiteSpace(currentUser?.Email) ? currentUser.Email : "Tài khoản thành viên";
+    // Chỉ hiển thị các danh mục đang hoạt động trên thanh Sub-Nav của End-User
+    var activeCategories = DbContext.Categories.Where(c => c.IsActive).OrderBy(c => c.Id).ToList();
 }
 <!DOCTYPE html>
 <html lang="vi">
@@ -119,11 +122,10 @@
     <nav class="subnav-bar">
         <div class="container d-flex justify-content-between align-items-center overflow-auto">
             <div class="d-flex align-items-center gap-1 py-1">
-                <a class="subnav-link" asp-page="/Index" asp-route-category="1">Điện thoại</a>
-                <a class="subnav-link" asp-page="/Index" asp-route-category="2">Laptop</a>
-                <a class="subnav-link" asp-page="/Index" asp-route-category="3">Máy tính bảng</a>
-                <a class="subnav-link" asp-page="/Index" asp-route-category="4">Âm thanh</a>
-                <a class="subnav-link" asp-page="/Index" asp-route-category="5">Phụ kiện</a>
+                @foreach (var cat in activeCategories)
+                {
+                    <a class="subnav-link" asp-page="/Index" asp-route-category="@cat.Id">@cat.Name</a>
+                }
             </div>
             <div class="d-none d-md-block">
                 <a class="subnav-promo" asp-page="/Index" asp-route-tag="deal">

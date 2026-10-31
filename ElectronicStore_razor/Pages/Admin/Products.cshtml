@@ -185,6 +185,10 @@
                             </td>
                             <td>
                                 <span class="text-secondary small fw-medium">@p.Category?.Name</span>
+                                @if (p.Category != null && !p.Category.IsActive)
+                                {
+                                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle ms-1 small" title="Danh mục này đang tạm ẩn">DM ẩn</span>
+                                }
                             </td>
                             <td>
                                 <span class="fw-bold text-dark">@p.Price.ToString("N0") ₫</span>
@@ -212,18 +216,25 @@
                                     <input type="hidden" name="CategoryId" value="@Model.CategoryId" />
                                     <input type="hidden" name="CurrentPage" value="@Model.CurrentPage" />
                                     <button type="submit" class="border-0 bg-transparent p-0" title="Bấm để bật/tắt hiển thị">
-                                        @if (p.IsActive)
-                                        {
-                                            <span class="badge-pill-status completed">
-                                                <span class="status-dot"></span>
-                                                <span>Đang bán</span>
-                                            </span>
-                                        }
-                                        else
+                                        @if (!p.IsActive)
                                         {
                                             <span class="badge-pill-status cancelled">
                                                 <span class="status-dot"></span>
                                                 <span>Tạm ẩn</span>
+                                            </span>
+                                        }
+                                        else if (p.Category != null && !p.Category.IsActive)
+                                        {
+                                            <span class="badge-pill-status pending" title="Sản phẩm đang bật nhưng bị ẩn trên trang khách do Danh mục đang tạm ẩn">
+                                                <span class="status-dot"></span>
+                                                <span>Ẩn theo DM</span>
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge-pill-status completed">
+                                                <span class="status-dot"></span>
+                                                <span>Đang bán</span>
                                             </span>
                                         }
                                     </button>

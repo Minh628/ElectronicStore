@@ -1,3 +1,4 @@
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -472,7 +473,8 @@ public class AdminController : Controller
     [HttpPost]
     public async Task<IActionResult> UpdateAccount(string userId, string fullName, string email, string phone, string address, string role, string? search)
     {
-        var user = await _userManager.FindByIdAsync(userId);
+        // Hỗ trợ tìm kiếm theo cả UserId (GUID) hoặc UserName
+        var user = await _userManager.FindByIdAsync(userId) ?? await _userManager.FindByNameAsync(userId);
         if (user == null)
         {
             TempData["ErrorMessage"] = "Không tìm thấy người dùng cần sửa!";
@@ -511,7 +513,8 @@ public class AdminController : Controller
     [HttpPost]
     public async Task<IActionResult> DeleteAccount(string userId, string? search)
     {
-        var user = await _userManager.FindByIdAsync(userId);
+        // Hỗ trợ tìm kiếm theo cả UserId (GUID) hoặc UserName
+        var user = await _userManager.FindByIdAsync(userId) ?? await _userManager.FindByNameAsync(userId);
         if (user == null) return RedirectToAction(nameof(Accounts), new { search });
 
         if (User.Identity != null && User.Identity.Name == user.UserName)
@@ -546,7 +549,8 @@ public class AdminController : Controller
     [HttpPost]
     public async Task<IActionResult> ToggleAccountLock(string userId, string? search)
     {
-        var user = await _userManager.FindByIdAsync(userId);
+        // Hỗ trợ tìm kiếm theo cả UserId (GUID) hoặc UserName
+        var user = await _userManager.FindByIdAsync(userId) ?? await _userManager.FindByNameAsync(userId);
         if (user != null)
         {
             if (User.Identity != null && User.Identity.Name == user.UserName)

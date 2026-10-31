@@ -107,7 +107,12 @@ app.UseAuthorization();
 
 app.MapStaticAssets();
 
-// 1. Cấu hình Route cho Area (Admin)
+// 1. Cấu hình Route trực tiếp cho Admin (hỗ trợ cả /Admin/Products và /Admin/Admin/Products)
+app.MapControllerRoute(
+    name: "admin_direct",
+    pattern: "Admin/{action=Products}/{id?}",
+    defaults: new { area = "Admin", controller = "Admin" });
+
 app.MapControllerRoute(
     name: "areas",
     pattern: "{area:exists}/{controller=Admin}/{action=Index}/{id?}");

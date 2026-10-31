@@ -34,7 +34,8 @@ builder.Services.AddRazorComponents()
 builder.Services.AddCascadingAuthenticationState();
 
 // Đăng ký dịch vụ ProductService kết nối SQL Server và CartService quản lý giỏ hàng
-builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<ProductService>();
+builder.Services.AddScoped<IProductService>(sp => sp.GetRequiredService<ProductService>());
 builder.Services.AddScoped<CartService>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<AuthenticationStateProvider, BlazorAuthStateProvider>();

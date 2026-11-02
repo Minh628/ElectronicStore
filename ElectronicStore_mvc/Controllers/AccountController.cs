@@ -107,6 +107,15 @@ public class AccountController : Controller
             return View();
         }
 
+        // BẢO MẬT & PHÂN TÁCH CỔNG: Chặn tuyệt đối tài khoản Admin đăng nhập tại cổng End-User
+        // Bất kể đúng hay sai mật khẩu, trả về lỗi chung để chống Username Enumeration
+        var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
+        if (isAdmin)
+        {
+            ViewBag.ErrorMessage = "Tên đăng nhập hoặc mật khẩu không chính xác!";
+            return View();
+        }
+
         if (!user.IsActive)
         {
             ViewBag.ErrorMessage = "Tài khoản của bạn đã bị Admin KHÓA! Vui lòng liên hệ ban quản trị.";
@@ -119,11 +128,6 @@ public class AccountController : Controller
             if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
             {
                 return Redirect(returnUrl);
-            }
-
-            if (await _userManager.IsInRoleAsync(user, "Admin"))
-            {
-                return RedirectToAction("Products", "Admin", new { area = "Admin" });
             }
 
             return RedirectToAction("Index", "Home");

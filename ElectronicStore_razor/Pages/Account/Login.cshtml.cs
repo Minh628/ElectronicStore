@@ -49,6 +49,15 @@ public class LoginModel : PageModel
             return Page();
         }
 
+        // BẢO MẬT & PHÂN TÁCH CỔNG: Chặn tuyệt đối tài khoản Admin đăng nhập tại cổng End-User
+        // Bất kể đúng hay sai mật khẩu, trả về lỗi chung để chống Username Enumeration
+        var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
+        if (isAdmin)
+        {
+            ErrorMessage = "Tên đăng nhập hoặc mật khẩu không chính xác!";
+            return Page();
+        }
+
         // KIỂM TRA TRẠNG THÁI KHÓA TÀI KHOẢN
         if (!user.IsActive)
         {
@@ -63,12 +72,6 @@ public class LoginModel : PageModel
             if (!string.IsNullOrEmpty(ReturnUrl) && Url.IsLocalUrl(ReturnUrl))
             {
                 return Redirect(ReturnUrl);
-            }
-
-            // Nếu người dùng có quyền Admin thì có thể chuyển thẳng đến trang quản trị
-            if (await _userManager.IsInRoleAsync(user, "Admin"))
-            {
-                return RedirectToPage("/Admin/Products");
             }
 
             return RedirectToPage("/Index");

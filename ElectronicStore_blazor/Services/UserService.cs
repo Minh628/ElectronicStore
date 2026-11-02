@@ -79,6 +79,13 @@ public class UserService
                 return (false, "Tên đăng nhập hoặc mật khẩu không chính xác!");
             }
 
+            // BẢO MẬT & PHÂN TÁCH CỔNG: Chặn tuyệt đối tài khoản Admin đăng nhập tại cổng End-User
+            var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
+            if (isAdmin)
+            {
+                return (false, "Tên đăng nhập hoặc mật khẩu không chính xác!");
+            }
+
             if (!user.IsActive)
             {
                 return (false, "Tài khoản của bạn đã bị Admin KHÓA! Vui lòng liên hệ ban quản trị.");

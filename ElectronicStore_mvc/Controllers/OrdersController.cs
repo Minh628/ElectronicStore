@@ -11,12 +11,12 @@ namespace ElectronicStore_mvc.Controllers;
 public class OrdersController : Controller
 {
     private readonly IOrderService _orderService;
-    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IAccountService _accountService;
 
-    public OrdersController(IOrderService orderService, UserManager<ApplicationUser> userManager)
+    public OrdersController(IOrderService orderService, IAccountService accountService)
     {
         _orderService = orderService;
-        _userManager = userManager;
+        _accountService = accountService;
     }
 
     /// <summary>
@@ -27,7 +27,7 @@ public class OrdersController : Controller
     [Route("Orders/MyOrders")]
     public async Task<IActionResult> MyOrders(string? phoneNumber, string? status = "All")
     {
-        var currentUser = (User.Identity != null && User.Identity.IsAuthenticated) ? await _userManager.GetUserAsync(User) : null;
+        var currentUser = (User.Identity != null && User.Identity.IsAuthenticated) ? await _accountService.GetCurrentUserAsync(User) : null;
         var currentUserId = currentUser?.Id;
         var userPhone = currentUser?.PhoneNumber;
 
@@ -43,17 +43,13 @@ public class OrdersController : Controller
             ViewBag.PhoneNumber = phoneNumber.Trim();
         }
 
-        // Gọi OrderService lấy danh sách đơn hàng bảo mật
-        var allOrders = await _orderService.GetCustomerOrdersAsync(currentUserId, userPhone, phoneNumber);
+        // Gọi OrderService lấy danh sách đơn hàng và lọc nghiệp vụ tập trung
+        var (allOrders, filteredOrders) = await _orderService.GetCustomerOrdersOverviewAsync(currentUserId, userPhone, phoneNumber, status);
 
         ViewBag.Status = status ?? "All";
         ViewBag.AllOrders = allOrders;
 
-        var filtered = (status == "All" || string.IsNullOrEmpty(status))
-            ? allOrders
-            : allOrders.Where(o => _orderService.NormalizeStatus(o.OrderStatus) == _orderService.NormalizeStatus(status)).ToList();
-
-        return View(filtered);
+        return View(filteredOrders);
     }
 
     /// <summary>
@@ -65,7 +61,7 @@ public class OrdersController : Controller
     [Route("Orders/CancelOrder")]
     public async Task<IActionResult> CancelOrder(int orderId, string? phoneNumber, string? status)
     {
-        var currentUser = (User.Identity != null && User.Identity.IsAuthenticated) ? await _userManager.GetUserAsync(User) : null;
+        var currentUser = (User.Identity != null && User.Identity.IsAuthenticated) ? await _accountService.GetCurrentUserAsync(User) : null;
         var result = await _orderService.CancelCustomerOrderAsync(orderId, currentUser?.Id, currentUser?.PhoneNumber, phoneNumber);
 
         if (result.Success)

@@ -73,7 +73,7 @@
             <div class="admin-stat-card">
                 <div>
                     <div class="stat-label">Chờ duyệt</div>
-                    <div class="stat-value text-warning">@orders.Count(o => NormalizeStatus(o.OrderStatus) == "Pending")</div>
+                    <div class="stat-value text-warning">@pendingCount</div>
                     <div class="stat-subtext">Cần xử lý ngay</div>
                 </div>
                 <div class="stat-icon-wrap amber">
@@ -88,7 +88,7 @@
             <div class="admin-stat-card">
                 <div>
                     <div class="stat-label">Đang giao</div>
-                    <div class="stat-value text-info">@orders.Count(o => NormalizeStatus(o.OrderStatus) == "Shipping")</div>
+                    <div class="stat-value text-info">@shippingCount</div>
                     <div class="stat-subtext">Đang phát cho khách</div>
                 </div>
                 <div class="stat-icon-wrap purple">
@@ -104,9 +104,9 @@
                 <div>
                     <div class="stat-label">Doanh thu thực tế</div>
                     <div class="stat-value text-success" style="font-size: 1.35rem;">
-                        @orders.Where(o => NormalizeStatus(o.OrderStatus) == "Completed").Sum(o => o.TotalAmount).ToString("N0") ₫
+                        @totalRevenue.ToString("N0") ₫
                     </div>
-                    <div class="stat-subtext">Đơn hoàn thành (@orders.Count(o => NormalizeStatus(o.OrderStatus) == "Completed"))</div>
+                    <div class="stat-subtext">Đơn hoàn thành (@completedCount)</div>
                 </div>
                 <div class="stat-icon-wrap green">
                     <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">

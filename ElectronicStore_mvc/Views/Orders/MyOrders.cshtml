@@ -1,8 +1,8 @@
 @model List<ElectronicStore_mvc.Models.Entities.Order>
-@inject Microsoft.AspNetCore.Identity.UserManager<ElectronicStore_mvc.Models.Entities.ApplicationUser> UserManager
+@inject ElectronicStore_mvc.Services.IAccountService AccountService
 @{
     ViewData["Title"] = "Đơn Hàng Của Tôi";
-    var currentUser = (User.Identity != null && User.Identity.IsAuthenticated) ? await UserManager.GetUserAsync(User) : null;
+    var currentUser = (User.Identity != null && User.Identity.IsAuthenticated) ? await AccountService.GetCurrentUserAsync(User) : null;
     var userFullName = !string.IsNullOrWhiteSpace(currentUser?.FullName) ? currentUser.FullName : (User.Identity?.Name ?? "Khách vãng lai");
     var userSubText = (User.Identity != null && User.Identity.IsAuthenticated) ? (!string.IsNullOrWhiteSpace(currentUser?.Email) ? currentUser.Email : "Thành viên chính thức") : (!string.IsNullOrEmpty(ViewBag.PhoneNumber as string) ? (string)ViewBag.PhoneNumber : "Chưa đăng nhập");
     string? phoneNumber = ViewBag.PhoneNumber;

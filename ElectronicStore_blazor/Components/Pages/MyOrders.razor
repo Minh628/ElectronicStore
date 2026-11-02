@@ -252,8 +252,7 @@
     private string? errorMessage;
     private List<Order> orders = new();
 
-    private IEnumerable<Order> FilteredOrders =>
-        activeTab == "All" ? orders : orders.Where(o => NormalizeStatus(o.OrderStatus) == activeTab);
+    private IEnumerable<Order> FilteredOrders => orders;
 
     private static string NormalizeStatus(string? status) => status switch
     {
@@ -295,6 +294,14 @@
     private void SetTab(string tab)
     {
         activeTab = tab;
+        if (!string.IsNullOrWhiteSpace(searchPhone))
+        {
+            LoadOrdersByPhone();
+        }
+        else
+        {
+            LoadUserOrders();
+        }
     }
 
     private async Task HandleCancelOrder(int orderId)
@@ -338,7 +345,7 @@
     {
         var userId = UserService.CurrentUser?.Id;
         var userPhone = UserService.CurrentUser?.PhoneNumber;
-        orders = OrderService.GetCustomerOrders(userId, userPhone, null);
+        orders = OrderService.GetCustomerOrders(userId, userPhone, null, activeTab);
     }
 
     private static string FormatPaymentMethod(string? method) => method switch
@@ -355,8 +362,7 @@
         if (string.IsNullOrWhiteSpace(searchPhone)) return;
         var userId = UserService.CurrentUser?.Id;
         var userPhone = UserService.CurrentUser?.PhoneNumber;
-        orders = OrderService.GetCustomerOrders(userId, userPhone, searchPhone);
-        activeTab = "All";
+        orders = OrderService.GetCustomerOrders(userId, userPhone, searchPhone, activeTab);
     }
 
     private void HandleKeyDown(KeyboardEventArgs e)

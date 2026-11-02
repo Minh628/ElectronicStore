@@ -13,18 +13,15 @@ public class AccountController : Controller
 {
     private readonly IAccountService _accountService;
     private readonly ElectronicStore_mvc.Areas.Admin.Services.IAdminAccountService _adminAccountService;
-    private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
 
     public AccountController(
         IAccountService accountService,
         ElectronicStore_mvc.Areas.Admin.Services.IAdminAccountService adminAccountService,
-        UserManager<ApplicationUser> userManager,
         SignInManager<ApplicationUser> signInManager)
     {
         _accountService = accountService;
         _adminAccountService = adminAccountService;
-        _userManager = userManager;
         _signInManager = signInManager;
     }
 
@@ -163,7 +160,7 @@ public class AccountController : Controller
     [HttpGet]
     public async Task<IActionResult> Profile()
     {
-        var user = await _userManager.GetUserAsync(User);
+        var user = await _accountService.GetCurrentUserAsync(User);
         if (user == null)
         {
             return RedirectToAction("Login", "Account");
@@ -177,7 +174,7 @@ public class AccountController : Controller
     public async Task<IActionResult> Profile(
         string fullName, string email, string? phoneNumber, string? address, string? currentPassword, string? newPassword, string? confirmPassword)
     {
-        var user = await _userManager.GetUserAsync(User);
+        var user = await _accountService.GetCurrentUserAsync(User);
         if (user == null)
         {
             return RedirectToAction("Login", "Account");

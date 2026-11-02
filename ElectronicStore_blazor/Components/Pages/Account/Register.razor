@@ -2,7 +2,6 @@
 @page "/register"
 @using Microsoft.AspNetCore.Identity
 @using ElectronicStore_blazor.Models.Entities
-@inject UserManager<ApplicationUser> UserManager
 @inject UserService UserService
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
@@ -142,36 +141,7 @@
             return;
         }
 
-        // Sử dụng ExecuteWithLockAsync để tránh xung đột DbContext với MainLayout.RestoreSessionAsync
-        var createResult = await UserService.ExecuteWithLockAsync(async userManager =>
-        {
-            var existingUser = await userManager.FindByNameAsync(username.Trim());
-            if (existingUser != null)
-            {
-                return (Succeeded: false, Error: "Tên đăng nhập này đã được sử dụng. Vui lòng chọn tên khác!");
-            }
-
-            var user = new ApplicationUser
-            {
-                UserName = username.Trim(),
-                FullName = fullName.Trim(),
-                PhoneNumber = phoneNumber.Trim(),
-                Email = string.IsNullOrWhiteSpace(email) ? $"{username.Trim()}@electrostore.vn" : email.Trim(),
-                Address = string.IsNullOrWhiteSpace(address) ? "Chưa cập nhật địa chỉ" : address.Trim(),
-                IsActive = true,
-                CreatedAt = DateTime.Now
-            };
-
-            var result = await userManager.CreateAsync(user, password.Trim());
-            if (result.Succeeded)
-            {
-                await userManager.AddToRoleAsync(user, "Customer");
-                return (Succeeded: true, Error: string.Empty);
-            }
-
-            return (Succeeded: false, Error: string.Join("; ", result.Errors.Select(e => e.Description)));
-        });
-
+        var createResult = await UserService.RegisterAsync(username, password, fullName, phoneNumber, email, address);
         if (createResult.Succeeded)
         {
             await UserService.LoginAsync(username.Trim(), password.Trim(), JS);

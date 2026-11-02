@@ -12,18 +12,18 @@ public class CheckoutModel : PageModel
     private readonly IProductService _productService;
     private readonly IOrderService _orderService;
     private readonly CartService _cartService;
-    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IAccountService _accountService;
 
     public CheckoutModel(
         IProductService productService,
         IOrderService orderService,
         CartService cartService,
-        UserManager<ApplicationUser> userManager)
+        IAccountService accountService)
     {
         _productService = productService;
         _orderService = orderService;
         _cartService = cartService;
-        _userManager = userManager;
+        _accountService = accountService;
     }
 
     public List<CartItem> CartItems { get; set; } = new();
@@ -66,11 +66,10 @@ public class CheckoutModel : PageModel
 
         TotalAmount = _cartService.GetTotal();
 
-        // Tự động điền thông tin khách hàng từ ApplicationUser nếu đã đăng nhập
-        var username = User.Identity?.Name;
-        if (!string.IsNullOrEmpty(username))
+        // Tự động điền thông tin khách hàng từ AccountService nếu đã đăng nhập
+        if (User.Identity != null && User.Identity.IsAuthenticated)
         {
-            var user = await _userManager.FindByNameAsync(username);
+            var user = await _accountService.GetCurrentUserAsync(User);
             if (user != null)
             {
                 FullName = !string.IsNullOrWhiteSpace(user.FullName) ? user.FullName : (user.UserName ?? string.Empty);
@@ -94,10 +93,9 @@ public class CheckoutModel : PageModel
         TotalAmount = _cartService.GetTotal();
 
         string? currentUserId = null;
-        var username = User.Identity?.Name;
-        if (!string.IsNullOrEmpty(username))
+        if (User.Identity != null && User.Identity.IsAuthenticated)
         {
-            var user = await _userManager.FindByNameAsync(username);
+            var user = await _accountService.GetCurrentUserAsync(User);
             currentUserId = user?.Id;
         }
 

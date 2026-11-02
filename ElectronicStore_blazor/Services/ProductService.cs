@@ -37,6 +37,61 @@ public class ProductService : IProductService
         return query.OrderByDescending(p => p.Id).ToList();
     }
 
+    public ProductCatalogResult GetCatalogProducts(
+        int? categoryId, string? brand, string? search, string? sortBy, int currentPage = 1, int pageSize = 8)
+    {
+        using var context = _contextFactory.CreateDbContext();
+        var query = context.Products
+            .Include(p => p.Category)
+            .Where(p => p.IsActive && p.Category != null && p.Category.IsActive)
+            .AsQueryable();
+
+        if (categoryId.HasValue && categoryId.Value > 0)
+        {
+            query = query.Where(p => p.CategoryId == categoryId.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(brand))
+        {
+            var bLower = brand.Trim().ToLower();
+            query = query.Where(p => p.Brand.ToLower() == bLower);
+        }
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var kw = search.Trim().ToLower();
+            query = query.Where(p => p.Name.ToLower().Contains(kw) ||
+                                     p.Brand.ToLower().Contains(kw) ||
+                                     (p.Specifications != null && p.Specifications.ToLower().Contains(kw)));
+        }
+
+        int totalProducts = query.Count();
+        int totalPages = (int)Math.Ceiling(totalProducts / (double)pageSize);
+        if (totalPages < 1) totalPages = 1;
+        if (currentPage < 1) currentPage = 1;
+        if (currentPage > totalPages) currentPage = totalPages;
+
+        query = sortBy switch
+        {
+            "price-asc" or "price_asc" => query.OrderBy(p => p.Price),
+            "price-desc" or "price_desc" => query.OrderByDescending(p => p.Price),
+            _ => query.OrderByDescending(p => p.Id)
+        };
+
+        var products = query
+            .Skip((currentPage - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+
+        return new ProductCatalogResult
+        {
+            Products = products,
+            TotalProducts = totalProducts,
+            TotalPages = totalPages,
+            CurrentPage = currentPage
+        };
+    }
+
     public Product? GetProductById(int id)
     {
         using var context = _contextFactory.CreateDbContext();

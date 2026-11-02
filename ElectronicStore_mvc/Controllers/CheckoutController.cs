@@ -13,18 +13,18 @@ public class CheckoutController : Controller
     private readonly IProductService _productService;
     private readonly IOrderService _orderService;
     private readonly CartService _cartService;
-    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IAccountService _accountService;
 
     public CheckoutController(
         IProductService productService,
         IOrderService orderService,
         CartService cartService,
-        UserManager<ApplicationUser> userManager)
+        IAccountService accountService)
     {
         _productService = productService;
         _orderService = orderService;
         _cartService = cartService;
-        _userManager = userManager;
+        _accountService = accountService;
     }
 
     [HttpGet]
@@ -51,7 +51,7 @@ public class CheckoutController : Controller
         // Nếu đã đăng nhập thì tự động điền thông tin người dùng từ Identity ApplicationUser
         if (isAuthenticated)
         {
-            var user = await _userManager.GetUserAsync(User);
+            var user = await _accountService.GetCurrentUserAsync(User);
             if (user != null)
             {
                 ViewBag.FullName = user.FullName ?? user.UserName;
@@ -77,7 +77,7 @@ public class CheckoutController : Controller
         string? currentUserId = null;
         if (User.Identity != null && User.Identity.IsAuthenticated)
         {
-            var user = await _userManager.GetUserAsync(User);
+            var user = await _accountService.GetCurrentUserAsync(User);
             currentUserId = user?.Id;
         }
 
@@ -111,7 +111,7 @@ public class CheckoutController : Controller
     public async Task<IActionResult> OrderSuccess(int? id, int? orderId, string? phone)
     {
         int actualId = id ?? orderId ?? HttpContext.Session.GetInt32("LastGuestOrderId") ?? 0;
-        var user = (User.Identity != null && User.Identity.IsAuthenticated) ? await _userManager.GetUserAsync(User) : null;
+        var user = (User.Identity != null && User.Identity.IsAuthenticated) ? await _accountService.GetCurrentUserAsync(User) : null;
         bool isAdmin = User.IsInRole("Admin");
         int? lastGuestId = HttpContext.Session.GetInt32("LastGuestOrderId");
 

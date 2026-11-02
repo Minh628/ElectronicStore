@@ -1,9 +1,9 @@
 @page
 @model ElectronicStore_razor.Pages.MyOrdersModel
-@inject Microsoft.AspNetCore.Identity.UserManager<ElectronicStore_razor.Models.Entities.ApplicationUser> UserManager
+@inject ElectronicStore_razor.Services.IAccountService AccountService
 @{
     ViewData["Title"] = "Đơn Hàng Của Tôi";
-    var currentUser = (User.Identity != null && User.Identity.IsAuthenticated) ? await UserManager.GetUserAsync(User) : null;
+    var currentUser = (User.Identity != null && User.Identity.IsAuthenticated) ? await AccountService.GetCurrentUserAsync(User) : null;
     var userFullName = !string.IsNullOrWhiteSpace(currentUser?.FullName) ? currentUser.FullName : (User.Identity?.Name ?? "Khách vãng lai");
     var userSubText = (User.Identity != null && User.Identity.IsAuthenticated) ? (!string.IsNullOrWhiteSpace(currentUser?.Email) ? currentUser.Email : "Thành viên chính thức") : (!string.IsNullOrEmpty(Model.LookupPhone) ? Model.LookupPhone : "Chưa đăng nhập");
     var filteredOrders = Model.Orders;

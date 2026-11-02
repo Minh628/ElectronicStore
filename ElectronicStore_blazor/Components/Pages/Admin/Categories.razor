@@ -211,11 +211,7 @@
     private string? alertMessage;
     private string? alertType;
 
-    private IEnumerable<Category> FilteredCategories =>
-        string.IsNullOrWhiteSpace(searchKeyword)
-            ? categories
-            : categories.Where(c => c.Name.Contains(searchKeyword.Trim(), StringComparison.OrdinalIgnoreCase) ||
-                                    (!string.IsNullOrEmpty(c.Description) && c.Description.Contains(searchKeyword.Trim(), StringComparison.OrdinalIgnoreCase)));
+    private IEnumerable<Category> FilteredCategories => categories;
 
     protected override void OnInitialized()
     {
@@ -224,7 +220,7 @@
 
     private void LoadCategories()
     {
-        categories = AdminCategoryService.GetCategories();
+        categories = AdminCategoryService.GetCategories(searchKeyword);
     }
 
     private void OpenAddModal()

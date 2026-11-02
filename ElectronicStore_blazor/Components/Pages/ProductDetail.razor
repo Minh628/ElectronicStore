@@ -310,7 +310,7 @@
             activeImage = string.IsNullOrEmpty(product.ImageUrl) ? "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9" : product.ImageUrl;
             isImageFlipped = false;
             quantity = 1;
-            relatedProducts = ProductService.GetAllProducts().Where(p => p.CategoryId == product.CategoryId && p.Id != product.Id).Take(4).ToList();
+            relatedProducts = ProductService.GetRelatedProducts(product.CategoryId, product.Id, 4);
         }
     }
 

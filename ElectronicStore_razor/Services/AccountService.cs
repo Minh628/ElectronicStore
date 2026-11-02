@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Identity;
 using ElectronicStore_razor.Data;
 using ElectronicStore_razor.Models.Entities;
 
+using System.Security.Claims;
+
 namespace ElectronicStore_razor.Services;
 
 public class AccountService : IAccountService
@@ -82,6 +84,12 @@ public class AccountService : IAccountService
 
         await _userManager.AddToRoleAsync(user, "Customer");
         return (true, "Đăng ký tài khoản thành công!", user);
+    }
+
+    public async Task<ApplicationUser?> GetCurrentUserAsync(ClaimsPrincipal principal)
+    {
+        if (principal.Identity == null || !principal.Identity.IsAuthenticated) return null;
+        return await _userManager.GetUserAsync(principal);
     }
 
     public async Task<ApplicationUser?> GetUserByIdOrNameAsync(string idOrName)

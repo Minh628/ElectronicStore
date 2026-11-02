@@ -455,10 +455,8 @@
 
     private void LoadCatalogData()
     {
-        // Tải danh sách sản phẩm và danh mục đang hoạt động (tự động loại bỏ danh mục ẩn và sản phẩm thuộc danh mục ẩn)
-        allProducts = ProductService.GetAllProducts();
         categories = CategoryService.GetActiveCategories();
-        brands = allProducts.Select(p => p.Brand).Distinct().OrderBy(b => b).ToList();
+        brands = ProductService.GetBrands();
     }
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
@@ -549,30 +547,18 @@
 
     private void ApplyFilter()
     {
-        var query = allProducts
-            .Where(p => selectedCatId == 0 || p.CategoryId == selectedCatId)
-            .Where(p => string.IsNullOrEmpty(selectedBrand) || p.Brand.Equals(selectedBrand, StringComparison.OrdinalIgnoreCase))
-            .Where(p => string.IsNullOrEmpty(searchKeyword) ||
-                        p.Name.Contains(searchKeyword, StringComparison.OrdinalIgnoreCase) ||
-                        p.Brand.Contains(searchKeyword, StringComparison.OrdinalIgnoreCase) ||
-                        (p.Specifications?.Contains(searchKeyword, StringComparison.OrdinalIgnoreCase) ?? false));
+        var result = ProductService.GetCatalogProducts(
+            selectedCatId > 0 ? selectedCatId : null,
+            selectedBrand,
+            searchKeyword,
+            sortBy,
+            currentPage,
+            pageSize);
 
-        if (sortBy == "price-asc")
-        {
-            query = query.OrderBy(p => p.Price);
-        }
-        else if (sortBy == "price-desc")
-        {
-            query = query.OrderByDescending(p => p.Price);
-        }
-
-        filteredProducts = query.ToList();
-
-        totalPages = (int)Math.Ceiling((double)filteredProducts.Count / pageSize);
-        if (totalPages < 1) totalPages = 1;
-        if (currentPage > totalPages) currentPage = totalPages;
-
-        pagedProducts = filteredProducts.Skip((currentPage - 1) * pageSize).Take(pageSize).ToList();
+        filteredProducts = result.Products;
+        pagedProducts = result.Products;
+        totalPages = result.TotalPages;
+        currentPage = result.CurrentPage;
     }
 
     private void GoToPage(int page)
@@ -580,7 +566,7 @@
         if (page >= 1 && page <= totalPages)
         {
             currentPage = page;
-            pagedProducts = filteredProducts.Skip((currentPage - 1) * pageSize).Take(pageSize).ToList();
+            ApplyFilter();
         }
     }
 

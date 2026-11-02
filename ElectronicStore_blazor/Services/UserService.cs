@@ -241,4 +241,86 @@ public class UserService
         CurrentRole = string.Empty;
         OnChange?.Invoke();
     }
+    /// <summary>
+    /// Đăng ký tài khoản khách hàng mới (Chạy an toàn với Semaphore lock)
+    /// </summary>
+    public async Task<(bool Succeeded, string Error)> RegisterAsync(
+        string username, string password, string fullName, string phoneNumber, string? email, string? address)
+    {
+        return await ExecuteWithLockAsync(async userManager =>
+        {
+            var existingUser = await userManager.FindByNameAsync(username.Trim());
+            if (existingUser != null)
+            {
+                return (false, "Tên đăng nhập này đã được sử dụng. Vui lòng chọn tên khác!");
+            }
+
+            var user = new ApplicationUser
+            {
+                UserName = username.Trim(),
+                FullName = fullName.Trim(),
+                PhoneNumber = phoneNumber.Trim(),
+                Email = string.IsNullOrWhiteSpace(email) ? $"{username.Trim()}@electrostore.vn" : email.Trim(),
+                Address = string.IsNullOrWhiteSpace(address) ? "Chưa cập nhật địa chỉ" : address.Trim(),
+                IsActive = true,
+                CreatedAt = DateTime.Now
+            };
+
+            var result = await userManager.CreateAsync(user, password.Trim());
+            if (result.Succeeded)
+            {
+                await userManager.AddToRoleAsync(user, "Customer");
+                return (true, string.Empty);
+            }
+
+            return (false, string.Join("; ", result.Errors.Select(e => e.Description)));
+        });
+    }
+
+    /// <summary>
+    /// Cập nhật thông tin hồ sơ và đổi mật khẩu khách hàng
+    /// </summary>
+    public async Task<(bool Succeeded, string Error)> UpdateProfileAsync(
+        string userId, string fullName, string email, string? phoneNumber, string? address, string? currentPassword, string? newPassword)
+    {
+        return await ExecuteWithLockAsync(async userManager =>
+        {
+            var user = await userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                return (false, "Không tìm thấy thông tin tài khoản!");
+            }
+
+            user.FullName = fullName.Trim();
+            user.Email = email.Trim();
+            user.PhoneNumber = string.IsNullOrWhiteSpace(phoneNumber) ? null : phoneNumber.Trim();
+            user.Address = string.IsNullOrWhiteSpace(address) || address.Trim() == "Chưa cập nhật địa chỉ"
+                ? null
+                : address.Trim();
+
+            if (!string.IsNullOrWhiteSpace(newPassword))
+            {
+                if (string.IsNullOrWhiteSpace(currentPassword))
+                {
+                    return (false, "Vui lòng nhập mật khẩu hiện tại để đổi mật khẩu mới.");
+                }
+
+                var changePassResult = await userManager.ChangePasswordAsync(user, currentPassword, newPassword);
+                if (!changePassResult.Succeeded)
+                {
+                    return (false, string.Join("; ", changePassResult.Errors.Select(e => e.Description)));
+                }
+            }
+
+            var updateResult = await userManager.UpdateAsync(user);
+            if (updateResult.Succeeded)
+            {
+                UpdateCurrentUser(user);
+                return (true, string.Empty);
+            }
+
+            return (false, string.Join("; ", updateResult.Errors.Select(e => e.Description)));
+        });
+    }
+
 }

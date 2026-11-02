@@ -30,4 +30,9 @@ public partial class Product
     public virtual Category Category { get; set; } = null!;
 
     public virtual ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
+
+    /// <summary>
+    /// Kiem tra trang thai con hang dua tren ton kho thuc te
+    /// </summary>
+    public bool IsInStock => Quantity > 0;
 }

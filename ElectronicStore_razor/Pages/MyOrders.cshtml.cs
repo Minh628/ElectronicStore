@@ -9,12 +9,12 @@ namespace ElectronicStore_razor.Pages;
 public class MyOrdersModel : PageModel
 {
     private readonly IOrderService _orderService;
-    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IAccountService _accountService;
 
-    public MyOrdersModel(IOrderService orderService, UserManager<ApplicationUser> userManager)
+    public MyOrdersModel(IOrderService orderService, IAccountService accountService)
     {
         _orderService = orderService;
-        _userManager = userManager;
+        _accountService = accountService;
     }
 
     public List<Order> Orders { get; set; } = new();
@@ -36,7 +36,7 @@ public class MyOrdersModel : PageModel
 
     public async Task OnGetAsync()
     {
-        var currentUser = (User.Identity != null && User.Identity.IsAuthenticated) ? await _userManager.GetUserAsync(User) : null;
+        var currentUser = (User.Identity != null && User.Identity.IsAuthenticated) ? await _accountService.GetCurrentUserAsync(User) : null;
         var currentUserId = currentUser?.Id;
         var userPhone = currentUser?.PhoneNumber;
 
@@ -47,11 +47,9 @@ public class MyOrdersModel : PageModel
             return;
         }
 
-        var allOrders = await _orderService.GetCustomerOrdersAsync(currentUserId, userPhone, LookupPhone);
+        var (allOrders, filteredOrders) = await _orderService.GetCustomerOrdersOverviewAsync(currentUserId, userPhone, LookupPhone, Status);
         AllOrders = allOrders;
-        Orders = string.IsNullOrWhiteSpace(Status) || Status == "All"
-            ? allOrders
-            : allOrders.Where(o => _orderService.NormalizeStatus(o.OrderStatus) == _orderService.NormalizeStatus(Status)).ToList();
+        Orders = filteredOrders;
     }
 
     /// <summary>
@@ -64,7 +62,7 @@ public class MyOrdersModel : PageModel
             Status = status;
         }
 
-        var currentUser = (User.Identity != null && User.Identity.IsAuthenticated) ? await _userManager.GetUserAsync(User) : null;
+        var currentUser = (User.Identity != null && User.Identity.IsAuthenticated) ? await _accountService.GetCurrentUserAsync(User) : null;
         var result = await _orderService.CancelCustomerOrderAsync(orderId, currentUser?.Id, currentUser?.PhoneNumber, LookupPhone);
 
         if (result.Success)

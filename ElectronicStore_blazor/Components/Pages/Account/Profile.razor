@@ -4,7 +4,6 @@
 @using ElectronicStore_blazor.Services
 @using Microsoft.AspNetCore.Identity
 @inject UserService UserService
-@inject UserManager<ApplicationUser> UserManager
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 
@@ -264,61 +263,26 @@
 
         try
         {
-            await UserService.ExecuteWithLockAsync(async userManager =>
+            var result = await UserService.UpdateProfileAsync(
+                UserService.CurrentUser.Id,
+                model.FullName,
+                model.Email,
+                model.PhoneNumber,
+                model.Address,
+                model.CurrentPassword,
+                model.NewPassword);
+
+            if (result.Succeeded)
             {
-                var user = await userManager.FindByIdAsync(UserService.CurrentUser.Id);
-                if (user == null)
-                {
-                    errorMessage = "Không tìm thấy thông tin tài khoản!";
-                    return;
-                }
-
-                // Cập nhật các trường thông tin cơ bản
-                user.FullName = model.FullName.Trim();
-                user.Email = model.Email.Trim();
-                user.PhoneNumber = string.IsNullOrWhiteSpace(model.PhoneNumber) ? null : model.PhoneNumber.Trim();
-                user.Address = string.IsNullOrWhiteSpace(model.Address) || model.Address.Trim() == "Chưa cập nhật địa chỉ"
-                    ? null
-                    : model.Address.Trim();
-
-                // Xử lý đổi mật khẩu nếu người dùng nhập
-                if (!string.IsNullOrWhiteSpace(model.NewPassword))
-                {
-                    if (string.IsNullOrWhiteSpace(model.CurrentPassword))
-                    {
-                        errorMessage = "Vui lòng nhập mật khẩu hiện tại để đổi mật khẩu mới.";
-                        return;
-                    }
-
-                    if (model.NewPassword != model.ConfirmPassword)
-                    {
-                        errorMessage = "Mật khẩu xác nhận không trùng khớp với mật khẩu mới.";
-                        return;
-                    }
-
-                    var changePassResult = await userManager.ChangePasswordAsync(user, model.CurrentPassword, model.NewPassword);
-                    if (!changePassResult.Succeeded)
-                    {
-                        errorMessage = string.Join("; ", changePassResult.Errors.Select(e => e.Description));
-                        return;
-                    }
-                }
-
-                var updateResult = await userManager.UpdateAsync(user);
-                if (updateResult.Succeeded)
-                {
-                    // Đồng bộ lại dữ liệu trong UserService
-                    UserService.UpdateCurrentUser(user);
-                    successMessage = "Cập nhật thông tin tài khoản thành công!";
-                    model.CurrentPassword = string.Empty;
-                    model.NewPassword = string.Empty;
-                    model.ConfirmPassword = string.Empty;
-                }
-                else
-                {
-                    errorMessage = string.Join("; ", updateResult.Errors.Select(e => e.Description));
-                }
-            });
+                successMessage = "Cập nhật thông tin tài khoản thành công!";
+                model.CurrentPassword = string.Empty;
+                model.NewPassword = string.Empty;
+                model.ConfirmPassword = string.Empty;
+            }
+            else
+            {
+                errorMessage = result.Error;
+            }
         }
         catch (Exception ex)
         {

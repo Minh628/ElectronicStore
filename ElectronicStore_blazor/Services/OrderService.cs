@@ -138,7 +138,7 @@ public class OrderService : IOrderService
         return (true, "Đặt hàng thành công!", order.Id);
     }
 
-    public List<Order> GetCustomerOrders(string? userId, string? userPhone, string? searchPhone)
+    public List<Order> GetCustomerOrders(string? userId, string? userPhone, string? searchPhone, string? statusFilter = null)
     {
         using var context = _contextFactory.CreateDbContext();
         var query = context.Orders
@@ -161,6 +161,17 @@ public class OrderService : IOrderService
         else
         {
             return new List<Order>();
+        }
+
+        if (!string.IsNullOrWhiteSpace(statusFilter) && statusFilter != "All")
+        {
+            var norm = NormalizeStatusStatic(statusFilter);
+            query = query.Where(o => o.OrderStatus == norm ||
+                                     (norm == "Pending" && (o.OrderStatus == "Chờ xử lý" || o.OrderStatus == "Pending")) ||
+                                     (norm == "Confirmed" && (o.OrderStatus == "Đã duyệt" || o.OrderStatus == "Confirmed")) ||
+                                     (norm == "Shipping" && (o.OrderStatus == "Đang giao" || o.OrderStatus == "Đang giao hàng" || o.OrderStatus == "Shipping")) ||
+                                     (norm == "Completed" && (o.OrderStatus == "Hoàn thành" || o.OrderStatus == "Đã giao" || o.OrderStatus == "Completed")) ||
+                                     (norm == "Cancelled" && (o.OrderStatus == "Đã hủy" || o.OrderStatus == "Cancelled")));
         }
 
         return query.OrderByDescending(o => o.OrderDate).ToList();

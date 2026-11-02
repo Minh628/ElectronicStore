@@ -1,8 +1,8 @@
 @inject ElectronicStore_razor.Services.CartService CartService
 @inject ElectronicStore_razor.Services.ICategoryService CategoryService
-@inject Microsoft.AspNetCore.Identity.UserManager<ElectronicStore_razor.Models.Entities.ApplicationUser> UserManager
+@inject ElectronicStore_razor.Services.IAccountService AccountService
 @{
-    var currentUser = (User.Identity != null && User.Identity.IsAuthenticated) ? await UserManager.GetUserAsync(User) : null;
+    var currentUser = (User.Identity != null && User.Identity.IsAuthenticated) ? await AccountService.GetCurrentUserAsync(User) : null;
     var displayFullName = !string.IsNullOrWhiteSpace(currentUser?.FullName) ? currentUser.FullName : (User.Identity?.Name ?? "Thành viên");
     var displayEmail = !string.IsNullOrWhiteSpace(currentUser?.Email) ? currentUser.Email : "Tài khoản thành viên";
     // Chỉ hiển thị các danh mục đang hoạt động trên thanh Sub-Nav của End-User

@@ -9,14 +9,14 @@ namespace ElectronicStore_razor.Pages;
 public class OrderSuccessModel : PageModel
 {
     private readonly IOrderService _orderService;
-    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IAccountService _accountService;
 
     public OrderSuccessModel(
         IOrderService orderService,
-        UserManager<ApplicationUser> userManager)
+        IAccountService accountService)
     {
         _orderService = orderService;
-        _userManager = userManager;
+        _accountService = accountService;
     }
 
     public Order? Order { get; set; }
@@ -24,7 +24,7 @@ public class OrderSuccessModel : PageModel
     public async Task<IActionResult> OnGetAsync(int? orderId, int? id, string? phone)
     {
         var targetId = orderId ?? id ?? HttpContext.Session.GetInt32("LastGuestOrderId") ?? 0;
-        var user = (User.Identity != null && User.Identity.IsAuthenticated) ? await _userManager.GetUserAsync(User) : null;
+        var user = (User.Identity != null && User.Identity.IsAuthenticated) ? await _accountService.GetCurrentUserAsync(User) : null;
         bool isAdmin = User.IsInRole("Admin");
         int? lastGuestId = HttpContext.Session.GetInt32("LastGuestOrderId");
 

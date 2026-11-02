@@ -62,7 +62,7 @@
             <div class="admin-stat-card">
                 <div>
                     <div class="stat-label">Khách hàng</div>
-                    <div class="stat-value text-success">@users.Count(u => userRoles.GetValueOrDefault(u.Id, "Customer") != "Admin")</div>
+                    <div class="stat-value text-success">@customerCount</div>
                     <div class="stat-subtext">Tài khoản thành viên</div>
                 </div>
                 <div class="stat-icon-wrap green">
@@ -77,7 +77,7 @@
             <div class="admin-stat-card">
                 <div>
                     <div class="stat-label">Quản trị viên</div>
-                    <div class="stat-value text-primary">@users.Count(u => userRoles.GetValueOrDefault(u.Id, "Customer") == "Admin")</div>
+                    <div class="stat-value text-primary">@adminCount</div>
                     <div class="stat-subtext">Quyền hạn tối cao</div>
                 </div>
                 <div class="stat-icon-wrap purple">
@@ -92,7 +92,7 @@
             <div class="admin-stat-card">
                 <div>
                     <div class="stat-label">Tài khoản bị khóa</div>
-                    <div class="stat-value text-danger">@users.Count(u => !u.IsActive)</div>
+                    <div class="stat-value text-danger">@lockedCount</div>
                     <div class="stat-subtext">Bị cấm truy cập</div>
                 </div>
                 <div class="stat-icon-wrap red">
@@ -422,13 +422,11 @@
     private string editAddress = "";
     private string editRole = "Customer";
 
-    private IEnumerable<ApplicationUser> FilteredUsers =>
-        string.IsNullOrWhiteSpace(searchKeyword)
-            ? users
-            : users.Where(u => (u.UserName != null && u.UserName.Contains(searchKeyword.Trim(), StringComparison.OrdinalIgnoreCase)) ||
-                               (u.FullName != null && u.FullName.Contains(searchKeyword.Trim(), StringComparison.OrdinalIgnoreCase)) ||
-                               (u.Email != null && u.Email.Contains(searchKeyword.Trim(), StringComparison.OrdinalIgnoreCase)) ||
-                               (u.PhoneNumber != null && u.PhoneNumber.Contains(searchKeyword.Trim())));
+    private int customerCount = 0;
+    private int adminCount = 0;
+    private int lockedCount = 0;
+
+    private IEnumerable<ApplicationUser> FilteredUsers => users;
 
     protected override async Task OnInitializedAsync()
     {
@@ -437,8 +435,19 @@
 
     private async Task LoadUsers()
     {
-        users = await AdminAccountService.GetUsersAsync();
+        users = await AdminAccountService.GetUsersAsync(searchKeyword);
         userRoles = await AdminAccountService.GetUserRolesAsync(users);
+
+        customerCount = 0;
+        adminCount = 0;
+        lockedCount = 0;
+        foreach (var u in users)
+        {
+            var role = userRoles.GetValueOrDefault(u.Id, "Customer");
+            if (role == "Admin") adminCount++;
+            else customerCount++;
+            if (!u.IsActive) lockedCount++;
+        }
     }
 
     private void OpenCreateModal()

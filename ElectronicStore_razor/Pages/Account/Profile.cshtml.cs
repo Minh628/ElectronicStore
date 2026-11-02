@@ -12,16 +12,13 @@ namespace ElectronicStore_razor.Pages.Account;
 public class ProfileModel : PageModel
 {
     private readonly IAccountService _accountService;
-    private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
 
     public ProfileModel(
         IAccountService accountService,
-        UserManager<ApplicationUser> userManager,
         SignInManager<ApplicationUser> signInManager)
     {
         _accountService = accountService;
-        _userManager = userManager;
         _signInManager = signInManager;
     }
 
@@ -70,7 +67,7 @@ public class ProfileModel : PageModel
 
     public async Task<IActionResult> OnGetAsync()
     {
-        var user = await _userManager.GetUserAsync(User);
+        var user = await _accountService.GetCurrentUserAsync(User);
         if (user == null)
         {
             return RedirectToPage("/Account/Login");
@@ -90,7 +87,7 @@ public class ProfileModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
-        var user = await _userManager.GetUserAsync(User);
+        var user = await _accountService.GetCurrentUserAsync(User);
         if (user == null)
         {
             return RedirectToPage("/Account/Login");

@@ -12,16 +12,13 @@ public class HomeController : Controller
 {
     private readonly IProductService _productService;
     private readonly ICategoryService _categoryService;
-    private readonly CartService _cartService;
 
     public HomeController(
         IProductService productService,
-        ICategoryService categoryService,
-        CartService cartService)
+        ICategoryService categoryService)
     {
         _productService = productService;
         _categoryService = categoryService;
-        _cartService = cartService;
     }
 
     /// <summary>

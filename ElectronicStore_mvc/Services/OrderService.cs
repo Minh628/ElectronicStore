@@ -149,6 +149,19 @@ public class OrderService : IOrderService
         }
     }
 
+    public async Task<(List<Order> AllOrders, List<Order> FilteredOrders)> GetCustomerOrdersOverviewAsync(
+        string? userId, string? userPhone, string? lookupPhone, string? statusFilter = null)
+    {
+        var allOrders = await GetCustomerOrdersAsync(userId, userPhone, lookupPhone);
+        if (string.IsNullOrWhiteSpace(statusFilter) || statusFilter.Equals("All", StringComparison.OrdinalIgnoreCase))
+        {
+            return (allOrders, allOrders);
+        }
+        var normTarget = NormalizeStatus(statusFilter);
+        var filtered = allOrders.Where(o => NormalizeStatus(o.OrderStatus) == normTarget).ToList();
+        return (allOrders, filtered);
+    }
+
     public async Task<List<Order>> GetCustomerOrdersAsync(string? userId, string? userPhone, string? lookupPhone)
     {
         var query = _context.Orders

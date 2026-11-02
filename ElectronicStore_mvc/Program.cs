@@ -63,6 +63,10 @@ builder.Services.AddSession(options =>
 
 // Đăng ký CartService
 builder.Services.AddScoped<CartService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<IAccountService, AccountService>();
 
 builder.Services.AddControllersWithViews(options =>
 {

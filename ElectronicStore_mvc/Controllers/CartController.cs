@@ -1,24 +1,25 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using ElectronicStore_mvc.Data;
 using ElectronicStore_mvc.Services;
 
 namespace ElectronicStore_mvc.Controllers;
 
+/// <summary>
+/// Controller xử lý thao tác giỏ hàng (Thin Controller)
+/// </summary>
 [IgnoreAntiforgeryToken]
 public class CartController : Controller
 {
-    private readonly ElectronicStoreDbContext _context;
+    private readonly IProductService _productService;
     private readonly CartService _cartService;
 
-    public CartController(ElectronicStoreDbContext context, CartService cartService)
+    public CartController(IProductService productService, CartService cartService)
     {
-        _context = context;
+        _productService = productService;
         _cartService = cartService;
     }
 
     /// <summary>
-    /// Hiển thị trang giỏ hàng và đồng bộ tồn kho/đơn giá thực tế từ Database
+    /// Hiển thị trang giỏ hàng và đồng bộ tồn kho/đơn giá thực tế từ Database thông qua Service
     /// </summary>
     public async Task<IActionResult> Index()
     {
@@ -26,7 +27,7 @@ public class CartController : Controller
         if (cart.Count > 0)
         {
             var productIds = cart.Select(c => c.ProductId).ToList();
-            var dbProducts = await _context.Products.Include(p => p.Category).Where(p => productIds.Contains(p.Id)).ToListAsync();
+            var dbProducts = await _productService.GetProductsByIdsAsync(productIds);
             _cartService.SyncWithProducts(dbProducts);
             cart = _cartService.GetCart();
         }
@@ -36,12 +37,12 @@ public class CartController : Controller
     }
 
     /// <summary>
-    /// Thêm sản phẩm vào giỏ hàng qua AJAX (hỗ trợ cả handler=AddToCart)
+    /// Thêm sản phẩm vào giỏ hàng qua AJAX
     /// </summary>
     [HttpPost]
     public async Task<IActionResult> AddToCart(int productId, int quantity = 1)
     {
-        var product = await _context.Products.Include(p => p.Category).FirstOrDefaultAsync(p => p.Id == productId);
+        var product = await _productService.GetProductForCartAsync(productId);
         if (product == null || !product.IsActive || (product.Category != null && !product.Category.IsActive))
         {
             return Json(new { success = false, message = "Sản phẩm không tồn tại hoặc đã ngừng kinh doanh!" });
@@ -62,7 +63,7 @@ public class CartController : Controller
     [HttpPost]
     public async Task<IActionResult> UpdateQuantity(int productId, int quantity)
     {
-        var product = await _context.Products.Include(p => p.Category).FirstOrDefaultAsync(p => p.Id == productId);
+        var product = await _productService.GetProductForCartAsync(productId);
         int maxStock = (product != null && product.IsActive && (product.Category == null || product.Category.IsActive)) ? product.Quantity : 0;
 
         _cartService.UpdateQuantity(productId, quantity, maxStock);

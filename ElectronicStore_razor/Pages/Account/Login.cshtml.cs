@@ -1,20 +1,21 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using ElectronicStore_razor.Models.Entities;
+using ElectronicStore_razor.Services;
 
 namespace ElectronicStore_razor.Pages.Account;
 
 public class LoginModel : PageModel
 {
-    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IAccountService _accountService;
     private readonly SignInManager<ApplicationUser> _signInManager;
 
     public LoginModel(
-        UserManager<ApplicationUser> userManager,
+        IAccountService accountService,
         SignInManager<ApplicationUser> signInManager)
     {
-        _userManager = userManager;
+        _accountService = accountService;
         _signInManager = signInManager;
     }
 
@@ -35,37 +36,20 @@ public class LoginModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
-        if (string.IsNullOrWhiteSpace(Username) || string.IsNullOrWhiteSpace(Password))
+        var validation = await _accountService.ValidateCustomerLoginAsync(Username, Password);
+        if (!validation.Success || validation.User == null)
         {
-            ErrorMessage = "Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu!";
+            ErrorMessage = validation.Message;
             return Page();
         }
 
-        // Tìm tài khoản theo Username chuẩn Identity
-        var user = await _userManager.FindByNameAsync(Username.Trim());
-        if (user == null)
-        {
-            ErrorMessage = "Tên đăng nhập hoặc mật khẩu không chính xác!";
-            return Page();
-        }
-
-        // BẢO MẬT & PHÂN TÁCH CỔNG: Chặn tuyệt đối tài khoản Admin đăng nhập tại cổng End-User
-        // Bất kể đúng hay sai mật khẩu, trả về lỗi chung để chống Username Enumeration
-        var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
-        if (isAdmin)
-        {
-            ErrorMessage = "Tên đăng nhập hoặc mật khẩu không chính xác!";
-            return Page();
-        }
-
-        // KIỂM TRA TRẠNG THÁI KHÓA TÀI KHOẢN
+        var user = validation.User;
         if (!user.IsActive)
         {
             ErrorMessage = "Tài khoản của bạn đã bị Admin KHÓA! Vui lòng liên hệ ban quản trị để được hỗ trợ.";
             return Page();
         }
 
-        // Xác thực mật khẩu bằng SignInManager chuẩn Identity
         var result = await _signInManager.PasswordSignInAsync(user, Password.Trim(), isPersistent: true, lockoutOnFailure: false);
         if (result.Succeeded)
         {

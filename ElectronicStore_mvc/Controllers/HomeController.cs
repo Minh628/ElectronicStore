@@ -1,89 +1,46 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using ElectronicStore_mvc.Data;
 using ElectronicStore_mvc.Models;
-using ElectronicStore_mvc.Models.Entities;
 using ElectronicStore_mvc.Services;
 
 namespace ElectronicStore_mvc.Controllers;
 
+/// <summary>
+/// Controller trang chủ và xem chi tiết thiết bị điện tử (Thin Controller)
+/// </summary>
 public class HomeController : Controller
 {
-    private readonly ElectronicStoreDbContext _context;
+    private readonly IProductService _productService;
+    private readonly ICategoryService _categoryService;
     private readonly CartService _cartService;
 
-    public HomeController(ElectronicStoreDbContext context, CartService cartService)
+    public HomeController(
+        IProductService productService,
+        ICategoryService categoryService,
+        CartService cartService)
     {
-        _context = context;
+        _productService = productService;
+        _categoryService = categoryService;
         _cartService = cartService;
     }
 
     /// <summary>
     /// Trang chủ hiển thị danh sách thiết bị điện tử, lọc theo danh mục, hãng, tìm kiếm, sắp xếp và phân trang
     /// </summary>
-    public async Task<IActionResult> Index(int? CategoryId, int? category, string? Brand, string? SearchKeyword, string? q, string? SortBy = "featured", int CurrentPage = 1)
+    public async Task<IActionResult> Index(
+        int? CategoryId, int? category, string? Brand, string? SearchKeyword, string? q, string? SortBy = "featured", int CurrentPage = 1)
     {
         CategoryId ??= category;
         SearchKeyword = !string.IsNullOrWhiteSpace(SearchKeyword) ? SearchKeyword : q;
         SortBy = string.IsNullOrWhiteSpace(SortBy) ? "featured" : SortBy;
 
-        // 1. Tải danh mục và hãng để làm bộ lọc
-        var categories = await _context.Categories
-            .Where(c => c.IsActive)
-            .OrderBy(c => c.Id)
-            .ToListAsync();
+        // 1. Tải danh mục và thương hiệu đang hoạt động từ tầng Service
+        var categories = await _categoryService.GetActiveCategoriesAsync();
+        var brands = await _productService.GetActiveBrandsAsync();
 
-        var brands = await _context.Products
-            .Where(p => p.IsActive && p.Category.IsActive)
-            .Select(p => p.Brand)
-            .Distinct()
-            .ToListAsync();
-
-        var query = _context.Products
-            .Include(p => p.Category)
-            .Where(p => p.IsActive && p.Category.IsActive);
-
-        // Lọc theo danh mục
-        if (CategoryId.HasValue && CategoryId.Value > 0)
-        {
-            query = query.Where(p => p.CategoryId == CategoryId.Value);
-        }
-
-        // Lọc theo hãng sản xuất (không phân biệt chữ hoa thường)
-        if (!string.IsNullOrWhiteSpace(Brand))
-        {
-            var brandLower = Brand.Trim().ToLower();
-            query = query.Where(p => p.Brand.ToLower() == brandLower);
-        }
-
-        // Tìm kiếm theo tên sản phẩm, thương hiệu hoặc thông số
-        if (!string.IsNullOrWhiteSpace(SearchKeyword))
-        {
-            var kw = SearchKeyword.Trim().ToLower();
-            query = query.Where(p => p.Name.ToLower().Contains(kw) || 
-                                     p.Brand.ToLower().Contains(kw) ||
-                                     (p.Specifications != null && p.Specifications.ToLower().Contains(kw)));
-        }
-
-        int pageSize = 8;
-        int totalProducts = await query.CountAsync();
-        int totalPages = (int)Math.Ceiling(totalProducts / (double)pageSize);
-        if (CurrentPage < 1) CurrentPage = 1;
-        if (CurrentPage > totalPages && totalPages > 0) CurrentPage = totalPages;
-
-        // Sắp xếp theo yêu cầu
-        query = SortBy switch
-        {
-            "price-asc" => query.OrderBy(p => p.Price),
-            "price-desc" => query.OrderByDescending(p => p.Price),
-            _ => query.OrderByDescending(p => p.Id)
-        };
-
-        var products = await query
-            .Skip((CurrentPage - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync();
+        // 2. Lấy danh sách sản phẩm thỏa mãn điều kiện lọc qua Service
+        var catalogResult = await _productService.GetCatalogProductsAsync(
+            CategoryId, Brand, SearchKeyword, SortBy, CurrentPage, pageSize: 8);
 
         ViewBag.Categories = categories;
         ViewBag.Brands = brands;
@@ -91,11 +48,11 @@ public class HomeController : Controller
         ViewBag.Brand = Brand;
         ViewBag.SearchKeyword = SearchKeyword;
         ViewBag.SortBy = SortBy;
-        ViewBag.CurrentPage = CurrentPage;
-        ViewBag.TotalPages = totalPages;
-        ViewBag.TotalProducts = totalProducts;
+        ViewBag.CurrentPage = catalogResult.CurrentPage;
+        ViewBag.TotalPages = catalogResult.TotalPages;
+        ViewBag.TotalProducts = catalogResult.TotalProducts;
 
-        return View(products);
+        return View(catalogResult.Products);
     }
 
     /// <summary>
@@ -103,33 +60,14 @@ public class HomeController : Controller
     /// </summary>
     public async Task<IActionResult> ProductDetail(int? id)
     {
-        ElectronicStore_mvc.Models.Entities.Product? product = null;
-
-        // Nếu có id hợp lệ thì tìm theo id (kiểm tra cả sản phẩm và danh mục còn hoạt động)
-        if (id.HasValue && id.Value > 0)
-        {
-            product = await _context.Products
-                .Include(p => p.Category)
-                .FirstOrDefaultAsync(p => p.Id == id.Value && p.IsActive && p.Category.IsActive);
-        }
-        else
-        {
-            product = await _context.Products
-                .Include(p => p.Category)
-                .FirstOrDefaultAsync(p => p.IsActive && p.Category.IsActive);
-        }
-
+        var product = await _productService.GetProductDetailAsync(id);
         if (product == null)
         {
             return View(null);
         }
 
-        // 4 sản phẩm gợi ý cùng danh mục
-        var relatedProducts = await _context.Products
-            .Where(p => p.CategoryId == product.CategoryId && p.Id != product.Id && p.IsActive && p.Category.IsActive)
-            .Take(4)
-            .ToListAsync();
-
+        // Lấy 4 sản phẩm gợi ý cùng danh mục từ Service
+        var relatedProducts = await _productService.GetRelatedProductsAsync(product.CategoryId, product.Id, count: 4);
         ViewBag.RelatedProducts = relatedProducts;
 
         return View(product);

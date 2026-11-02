@@ -2,6 +2,7 @@
 @inject CartService Cart
 @inject UserService UserService
 @inject IProductService ProductService
+@inject ICategoryService CategoryService
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 @implements IDisposable
@@ -216,7 +217,7 @@
     private void LoadActiveCategories()
     {
         // Chỉ hiển thị các danh mục đang hoạt động trên thanh Sub-Nav của khách hàng
-        activeCategories = ProductService.GetCategories().Where(c => c.IsActive).ToList();
+        activeCategories = CategoryService.GetActiveCategories();
     }
 
     private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)

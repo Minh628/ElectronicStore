@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using ElectronicStore_razor.Models.Entities;
+using ElectronicStore_razor.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -10,11 +11,16 @@ namespace ElectronicStore_razor.Pages.Account;
 [Authorize]
 public class ProfileModel : PageModel
 {
+    private readonly IAccountService _accountService;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
 
-    public ProfileModel(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager)
+    public ProfileModel(
+        IAccountService accountService,
+        UserManager<ApplicationUser> userManager,
+        SignInManager<ApplicationUser> signInManager)
     {
+        _accountService = accountService;
         _userManager = userManager;
         _signInManager = signInManager;
     }
@@ -64,7 +70,6 @@ public class ProfileModel : PageModel
 
     public async Task<IActionResult> OnGetAsync()
     {
-        // Lấy thông tin user hiện tại từ Identity
         var user = await _userManager.GetUserAsync(User);
         if (user == null)
         {
@@ -98,13 +103,17 @@ public class ProfileModel : PageModel
             return Page();
         }
 
-        // Cập nhật thông tin cá nhân
-        user.FullName = Input.FullName.Trim();
-        user.Email = Input.Email.Trim();
-        user.PhoneNumber = string.IsNullOrWhiteSpace(Input.PhoneNumber) ? null : Input.PhoneNumber.Trim();
-        user.Address = string.IsNullOrWhiteSpace(Input.Address) || Input.Address.Trim() == "Chưa cập nhật địa chỉ" ? null : Input.Address.Trim();
+        // Cập nhật thông tin cá nhân qua AccountService
+        var updateProfile = await _accountService.UpdateProfileAsync(
+            user.Id, Input.FullName, Input.PhoneNumber ?? "", Input.Address ?? "");
 
-        // Xử lý đổi mật khẩu nếu người dùng nhập mật khẩu mới
+        if (!updateProfile.Success)
+        {
+            ErrorMessage = updateProfile.Message;
+            return Page();
+        }
+
+        // Xử lý đổi mật khẩu nếu có qua AccountService
         if (!string.IsNullOrWhiteSpace(Input.NewPassword))
         {
             if (string.IsNullOrWhiteSpace(Input.CurrentPassword))
@@ -113,24 +122,16 @@ public class ProfileModel : PageModel
                 return Page();
             }
 
-            var changePassResult = await _userManager.ChangePasswordAsync(user, Input.CurrentPassword, Input.NewPassword);
-            if (!changePassResult.Succeeded)
+            var changePass = await _accountService.ChangePasswordAsync(user.Id, Input.CurrentPassword, Input.NewPassword);
+            if (!changePass.Success)
             {
-                ErrorMessage = string.Join("; ", changePassResult.Errors.Select(e => e.Description));
+                ErrorMessage = changePass.Message;
                 return Page();
             }
         }
 
-        var updateResult = await _userManager.UpdateAsync(user);
-        if (updateResult.Succeeded)
-        {
-            // Làm mới cookie xác thực nếu có thay đổi
-            await _signInManager.RefreshSignInAsync(user);
-            StatusMessage = "Cập nhật thông tin tài khoản thành công!";
-            return RedirectToPage();
-        }
-
-        ErrorMessage = string.Join("; ", updateResult.Errors.Select(e => e.Description));
-        return Page();
+        await _signInManager.RefreshSignInAsync(user);
+        StatusMessage = "Cập nhật thông tin tài khoản thành công!";
+        return RedirectToPage();
     }
 }

@@ -2,19 +2,20 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using ElectronicStore_razor.Models.Entities;
+using ElectronicStore_razor.Services;
 
 namespace ElectronicStore_razor.Pages.Account;
 
 public class RegisterModel : PageModel
 {
-    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IAccountService _accountService;
     private readonly SignInManager<ApplicationUser> _signInManager;
 
     public RegisterModel(
-        UserManager<ApplicationUser> userManager,
+        IAccountService accountService,
         SignInManager<ApplicationUser> signInManager)
     {
-        _userManager = userManager;
+        _accountService = accountService;
         _signInManager = signInManager;
     }
 
@@ -54,46 +55,23 @@ public class RegisterModel : PageModel
             return Page();
         }
 
-        // Kiểm tra xem Username đã tồn tại chưa
-        var existingUser = await _userManager.FindByNameAsync(Username.Trim());
-        if (existingUser != null)
+        var actualEmail = string.IsNullOrWhiteSpace(Email) ? $"{Username.Trim()}@electrostore.vn" : Email.Trim();
+        var actualAddress = string.IsNullOrWhiteSpace(Address) ? "Chưa cập nhật địa chỉ" : Address.Trim();
+
+        var result = await _accountService.RegisterAsync(
+            Username, FullName, actualEmail, PhoneNumber, actualAddress, Password);
+
+        if (result.Success && result.User != null)
         {
-            ErrorMessage = "Tên đăng nhập này đã được sử dụng! Vui lòng chọn tên khác.";
-            return Page();
-        }
-
-        // Tạo đối tượng ApplicationUser chuẩn Identity (lưu trữ đầy đủ thông tin cá nhân)
-        var user = new ApplicationUser
-        {
-            UserName = Username.Trim(),
-            FullName = FullName.Trim(),
-            PhoneNumber = PhoneNumber.Trim(),
-            Email = string.IsNullOrWhiteSpace(Email) ? $"{Username.Trim()}@electrostore.vn" : Email.Trim(),
-            Address = string.IsNullOrWhiteSpace(Address) ? "Chưa cập nhật địa chỉ" : Address.Trim(),
-            EmailConfirmed = true,
-            IsActive = true,
-            CreatedAt = DateTime.Now
-        };
-
-        var result = await _userManager.CreateAsync(user, Password.Trim());
-        if (result.Succeeded)
-        {
-            // Gán role 'Customer'
-            await _userManager.AddToRoleAsync(user, "Customer");
-
-            // Đăng nhập tự động
-            await _signInManager.SignInAsync(user, isPersistent: true);
-
-            // Điều hướng quay lại trang thanh toán hoặc url ban đầu nếu có
+            await _signInManager.SignInAsync(result.User, isPersistent: true);
             if (!string.IsNullOrEmpty(ReturnUrl) && Url.IsLocalUrl(ReturnUrl))
             {
                 return Redirect(ReturnUrl);
             }
-
             return RedirectToPage("/Index");
         }
 
-        ErrorMessage = string.Join("; ", result.Errors.Select(e => e.Description));
+        ErrorMessage = result.Message;
         return Page();
     }
 }

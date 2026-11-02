@@ -1,6 +1,6 @@
 @page "/admin/categories"
 @layout AdminLayout
-@inject IProductService ProductService
+@inject ICategoryService CategoryService
 @inject IJSRuntime JS
 
 <PageTitle>Admin - Quản Lý Danh Mục - ElectroStore</PageTitle>
@@ -224,7 +224,7 @@
 
     private void LoadCategories()
     {
-        categories = ProductService.GetCategories();
+        categories = CategoryService.GetCategories();
     }
 
     private void OpenAddModal()
@@ -235,7 +235,7 @@
 
     private void ToggleCategoryActive(Category c)
     {
-        if (ProductService.ToggleCategoryActive(c.Id))
+        if (CategoryService.ToggleCategoryActive(c.Id))
         {
             LoadCategories();
             var updated = categories.FirstOrDefault(x => x.Id == c.Id);
@@ -270,7 +270,7 @@
 
         try
         {
-            ProductService.SaveCategory(inputCategory);
+            CategoryService.SaveCategory(inputCategory);
             alertMessage = inputCategory.Id == 0 ? "Thêm danh mục thành công!" : "Cập nhật danh mục thành công!";
             alertType = "success";
             showModal = false;
@@ -289,7 +289,7 @@
         bool confirmed = await JS.InvokeAsync<bool>("confirm", "Bạn có chắc chắn muốn xóa danh mục này?");
         if (!confirmed) return;
 
-        var result = ProductService.DeleteCategory(id);
+        var result = CategoryService.DeleteCategory(id);
         if (result.Success)
         {
             alertMessage = result.Message;

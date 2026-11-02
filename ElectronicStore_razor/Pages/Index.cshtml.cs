@@ -1,7 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
-using ElectronicStore_razor.Data;
 using ElectronicStore_razor.Models.Entities;
 using ElectronicStore_razor.Services;
 
@@ -9,12 +7,17 @@ namespace ElectronicStore_razor.Pages;
 
 public class IndexModel : PageModel
 {
-    private readonly ElectronicStoreDbContext _context;
+    private readonly IProductService _productService;
+    private readonly ICategoryService _categoryService;
     private readonly CartService _cartService;
 
-    public IndexModel(ElectronicStoreDbContext context, CartService cartService)
+    public IndexModel(
+        IProductService productService,
+        ICategoryService categoryService,
+        CartService cartService)
     {
-        _context = context;
+        _productService = productService;
+        _categoryService = categoryService;
         _cartService = cartService;
     }
 
@@ -53,61 +56,17 @@ public class IndexModel : PageModel
         SearchKeyword = !string.IsNullOrWhiteSpace(SearchKeyword) ? SearchKeyword : q;
         SortBy = string.IsNullOrWhiteSpace(SortBy) ? "featured" : SortBy;
 
-        // Tải danh mục và hãng để làm bộ lọc
-        Categories = await _context.Categories
-            .Where(c => c.IsActive)
-            .OrderBy(c => c.Id)
-            .ToListAsync();
+        // Tải danh mục và hãng qua Service
+        Categories = await _categoryService.GetActiveCategoriesAsync();
+        Brands = await _productService.GetActiveBrandsAsync();
 
-        Brands = await _context.Products
-            .Where(p => p.IsActive && p.Category.IsActive)
-            .Select(p => p.Brand)
-            .Distinct()
-            .ToListAsync();
+        var result = await _productService.GetCatalogProductsAsync(
+            CategoryId, Brand, SearchKeyword, SortBy, CurrentPage, PageSize);
 
-        var query = _context.Products
-            .Include(p => p.Category)
-            .Where(p => p.IsActive && p.Category.IsActive);
-
-        // Lọc theo danh mục
-        if (CategoryId.HasValue && CategoryId.Value > 0)
-        {
-            query = query.Where(p => p.CategoryId == CategoryId.Value);
-        }
-
-        // Lọc theo hãng sản xuất (không phân biệt chữ hoa thường)
-        if (!string.IsNullOrWhiteSpace(Brand))
-        {
-            var brandLower = Brand.Trim().ToLower();
-            query = query.Where(p => p.Brand.ToLower() == brandLower);
-        }
-
-        // Tìm kiếm theo tên sản phẩm, thương hiệu hoặc thông số
-        if (!string.IsNullOrWhiteSpace(SearchKeyword))
-        {
-            var kw = SearchKeyword.Trim().ToLower();
-            query = query.Where(p => p.Name.ToLower().Contains(kw) || 
-                                     p.Brand.ToLower().Contains(kw) ||
-                                     (p.Specifications != null && p.Specifications.ToLower().Contains(kw)));
-        }
-
-        TotalProducts = await query.CountAsync();
-        TotalPages = (int)Math.Ceiling(TotalProducts / (double)PageSize);
-        if (CurrentPage < 1) CurrentPage = 1;
-        if (CurrentPage > TotalPages && TotalPages > 0) CurrentPage = TotalPages;
-
-        // Sắp xếp
-        query = SortBy switch
-        {
-            "price-asc" => query.OrderBy(p => p.Price),
-            "price-desc" => query.OrderByDescending(p => p.Price),
-            _ => query.OrderByDescending(p => p.Id)
-        };
-
-        Products = await query
-            .Skip((CurrentPage - 1) * PageSize)
-            .Take(PageSize)
-            .ToListAsync();
+        TotalProducts = result.TotalProducts;
+        TotalPages = result.TotalPages;
+        CurrentPage = result.CurrentPage;
+        Products = result.Products;
     }
 
     /// <summary>
@@ -115,9 +74,7 @@ public class IndexModel : PageModel
     /// </summary>
     public async Task<IActionResult> OnPostAddToCartAsync(int productId, int quantity = 1)
     {
-        var product = await _context.Products
-            .Include(p => p.Category)
-            .FirstOrDefaultAsync(p => p.Id == productId && p.IsActive && p.Category.IsActive);
+        var product = await _productService.GetProductDetailAsync(productId);
         if (product == null)
         {
             return new JsonResult(new { success = false, message = "Sản phẩm không tồn tại hoặc đã ngừng kinh doanh!" });

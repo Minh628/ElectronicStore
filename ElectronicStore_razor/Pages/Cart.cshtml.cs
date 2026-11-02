@@ -1,7 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
-using ElectronicStore_razor.Data;
 using ElectronicStore_razor.Models;
 using ElectronicStore_razor.Services;
 
@@ -10,12 +8,12 @@ namespace ElectronicStore_razor.Pages;
 public class CartModel : PageModel
 {
     private readonly CartService _cartService;
-    private readonly ElectronicStoreDbContext _context;
+    private readonly IProductService _productService;
 
-    public CartModel(CartService cartService, ElectronicStoreDbContext context)
+    public CartModel(CartService cartService, IProductService productService)
     {
         _cartService = cartService;
-        _context = context;
+        _productService = productService;
     }
 
     public List<CartItem> CartItems { get; set; } = new();
@@ -27,7 +25,7 @@ public class CartModel : PageModel
         if (cart.Count > 0)
         {
             var productIds = cart.Select(c => c.ProductId).ToList();
-            var dbProducts = await _context.Products.Include(p => p.Category).Where(p => productIds.Contains(p.Id)).ToListAsync();
+            var dbProducts = await _productService.GetProductsByIdsAsync(productIds);
             _cartService.SyncWithProducts(dbProducts);
         }
         CartItems = _cartService.GetCart();
@@ -36,13 +34,11 @@ public class CartModel : PageModel
 
     public async Task<IActionResult> OnPostUpdateQuantityAsync(int productId, int quantity)
     {
-        var product = await _context.Products.Include(p => p.Category).FirstOrDefaultAsync(p => p.Id == productId);
+        var product = await _productService.GetProductForCartAsync(productId);
         int maxStock = (product != null && product.IsActive && (product.Category == null || product.Category.IsActive)) ? product.Quantity : 0;
 
-        // Cập nhật số lượng trong session giỏ hàng
         _cartService.UpdateQuantity(productId, quantity, maxStock);
 
-        // Nếu gọi từ AJAX fetch API: trả về JSON để cập nhật giao diện mượt mà không F5
         if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
         {
             var cart = _cartService.GetCart();
@@ -65,7 +61,6 @@ public class CartModel : PageModel
     {
         _cartService.RemoveFromCart(productId);
 
-        // Trả về JSON cho AJAX khi xóa sản phẩm
         if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
         {
             return new JsonResult(new

@@ -2,27 +2,23 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
-using ElectronicStore_razor.Data;
 using ElectronicStore_razor.Models.Entities;
+using ElectronicStore_razor.Services;
 
 namespace ElectronicStore_razor.Pages.Admin;
 
 [Authorize(Roles = "Admin")]
 public class AccountsModel : PageModel
 {
+    private readonly IAccountService _accountService;
     private readonly UserManager<ApplicationUser> _userManager;
-    private readonly RoleManager<IdentityRole> _roleManager;
-    private readonly ElectronicStoreDbContext _context;
 
     public AccountsModel(
-        UserManager<ApplicationUser> userManager,
-        RoleManager<IdentityRole> roleManager,
-        ElectronicStoreDbContext context)
+        IAccountService accountService,
+        UserManager<ApplicationUser> userManager)
     {
+        _accountService = accountService;
         _userManager = userManager;
-        _roleManager = roleManager;
-        _context = context;
     }
 
     public List<ApplicationUser> Users { get; set; } = new();
@@ -39,161 +35,51 @@ public class AccountsModel : PageModel
 
     public async Task OnGetAsync()
     {
-        var query = _userManager.Users.AsQueryable();
-
-        if (!string.IsNullOrWhiteSpace(SearchKeyword))
+        var dtos = await _accountService.GetAdminAccountsAsync(SearchKeyword);
+        Users = dtos.Select(d => d.User).ToList();
+        UserRoles.Clear();
+        foreach (var d in dtos)
         {
-            var kw = SearchKeyword.Trim().ToLower();
-            query = query.Where(u => (u.UserName != null && u.UserName.ToLower().Contains(kw)) ||
-                                     (u.FullName != null && u.FullName.ToLower().Contains(kw)) ||
-                                     (u.Email != null && u.Email.ToLower().Contains(kw)) ||
-                                     (u.PhoneNumber != null && u.PhoneNumber.Contains(kw)));
-        }
-
-        Users = await query.OrderByDescending(u => u.CreatedAt).ToListAsync();
-
-        foreach (var u in Users)
-        {
-            var roles = await _userManager.GetRolesAsync(u);
-            UserRoles[u.Id] = roles.FirstOrDefault() ?? "Customer";
+            UserRoles[d.User.Id] = d.Role;
         }
     }
 
     /// <summary>
-    /// Thêm tài khoản người dùng mới (Admin hoặc Khách hàng)
+    /// Thêm tài khoản người dùng mới qua AccountService
     /// </summary>
     public async Task<IActionResult> OnPostCreateUserAsync(string username, string fullName, string email, string phone, string address, string password, string role)
     {
-        if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
-        {
-            AlertMessage = "Tên đăng nhập và mật khẩu không được để trống!";
-            AlertType = "danger";
-            return RedirectToPage(new { SearchKeyword });
-        }
-
-        var existing = await _userManager.FindByNameAsync(username.Trim());
-        if (existing != null)
-        {
-            AlertMessage = $"Tên đăng nhập '{username}' đã được sử dụng!";
-            AlertType = "danger";
-            return RedirectToPage(new { SearchKeyword });
-        }
-
-        var user = new ApplicationUser
-        {
-            UserName = username.Trim(),
-            FullName = string.IsNullOrWhiteSpace(fullName) ? username.Trim() : fullName.Trim(),
-            Email = string.IsNullOrWhiteSpace(email) ? $"{username.Trim()}@electrostore.vn" : email.Trim(),
-            PhoneNumber = phone?.Trim(),
-            Address = address?.Trim(),
-            IsActive = true,
-            CreatedAt = DateTime.UtcNow
-        };
-
-        var result = await _userManager.CreateAsync(user, password);
-        if (!result.Succeeded)
-        {
-            AlertMessage = "Lỗi khi tạo tài khoản: " + string.Join(", ", result.Errors.Select(e => e.Description));
-            AlertType = "danger";
-            return RedirectToPage(new { SearchKeyword });
-        }
-
-        // Đảm bảo role tồn tại
-        if (!await _roleManager.RoleExistsAsync(role))
-        {
-            await _roleManager.CreateAsync(new IdentityRole(role));
-        }
-        await _userManager.AddToRoleAsync(user, role);
-
-        AlertMessage = $"Đã tạo thành công tài khoản '{user.UserName}' với vai trò '{role}'!";
-        AlertType = "success";
+        var result = await _accountService.CreateAccountAsync(username, fullName, email, phone, address, password, role);
+        AlertMessage = result.Message;
+        AlertType = result.Success ? "success" : "danger";
         return RedirectToPage(new { SearchKeyword });
     }
 
     /// <summary>
-    /// Cập nhật thông tin và vai trò của tài khoản
+    /// Cập nhật thông tin và vai trò của tài khoản qua AccountService
     /// </summary>
     public async Task<IActionResult> OnPostUpdateUserAsync(string userId, string fullName, string email, string phone, string address, string role)
     {
-        var user = await _userManager.FindByIdAsync(userId);
-        if (user == null)
-        {
-            AlertMessage = "Không tìm thấy người dùng cần sửa!";
-            AlertType = "danger";
-            return RedirectToPage(new { SearchKeyword });
-        }
+        var currentAdmin = await _userManager.GetUserAsync(User);
+        var currentAdminId = currentAdmin?.Id ?? string.Empty;
 
-        // Chặn Admin tự tước quyền quản trị của chính mình
-        if (User.Identity != null && User.Identity.Name == user.UserName && role != "Admin")
-        {
-            AlertMessage = "Bạn không thể tự hạ quyền Quản trị viên của chính mình!";
-            AlertType = "warning";
-            return RedirectToPage(new { SearchKeyword });
-        }
-
-        user.FullName = fullName?.Trim();
-        user.Email = email?.Trim();
-        user.PhoneNumber = phone?.Trim();
-        user.Address = address?.Trim();
-
-        await _userManager.UpdateAsync(user);
-
-        // Cập nhật vai trò
-        var currentRoles = await _userManager.GetRolesAsync(user);
-        if (!currentRoles.Contains(role))
-        {
-            if (!await _roleManager.RoleExistsAsync(role))
-            {
-                await _roleManager.CreateAsync(new IdentityRole(role));
-            }
-            await _userManager.RemoveFromRolesAsync(user, currentRoles);
-            await _userManager.AddToRoleAsync(user, role);
-        }
-
-        AlertMessage = $"Đã cập nhật thông tin tài khoản '{user.UserName}'!";
-        AlertType = "success";
+        var result = await _accountService.UpdateAccountAsync(currentAdminId, userId, fullName, email, phone, address, role);
+        AlertMessage = result.Message;
+        AlertType = result.Success ? "success" : (result.Message.Contains("hạ quyền") ? "warning" : "danger");
         return RedirectToPage(new { SearchKeyword });
     }
 
     /// <summary>
-    /// Xóa tài khoản (bảo toàn CSDL: nếu đã có đơn hàng thì chuyển sang Khóa tài khoản)
+    /// Xóa tài khoản qua AccountService (tự động khóa nếu có đơn hàng)
     /// </summary>
     public async Task<IActionResult> OnPostDeleteUserAsync(string userId)
     {
-        var user = await _userManager.FindByIdAsync(userId);
-        if (user == null) return RedirectToPage(new { SearchKeyword });
+        var currentAdmin = await _userManager.GetUserAsync(User);
+        var currentAdminId = currentAdmin?.Id ?? string.Empty;
 
-        if (User.Identity != null && User.Identity.Name == user.UserName)
-        {
-            AlertMessage = "Bạn không thể tự xóa tài khoản Admin của chính mình!";
-            AlertType = "warning";
-            return RedirectToPage(new { SearchKeyword });
-        }
-
-        // Kiểm tra xem người dùng đã từng phát sinh đơn hàng hay chưa
-        bool hasOrders = await _context.Orders.AnyAsync(o => o.UserId == user.Id);
-        if (hasOrders)
-        {
-            user.IsActive = false;
-            await _userManager.UpdateAsync(user);
-            AlertMessage = $"Tài khoản '{user.UserName}' đã có lịch sử đơn hàng trong hệ thống. Để bảo toàn dữ liệu kế toán & hóa đơn, hệ thống đã chuyển sang trạng thái KHÓA TÀI KHOẢN thay vì xóa cứng.";
-            AlertType = "warning";
-        }
-        else
-        {
-            var res = await _userManager.DeleteAsync(user);
-            if (res.Succeeded)
-            {
-                AlertMessage = $"Đã xóa vĩnh viễn tài khoản '{user.UserName}'.";
-                AlertType = "success";
-            }
-            else
-            {
-                AlertMessage = "Không thể xóa: " + string.Join(", ", res.Errors.Select(e => e.Description));
-                AlertType = "danger";
-            }
-        }
-
+        var result = await _accountService.DeleteAccountAsync(currentAdminId, userId);
+        AlertMessage = result.Message;
+        AlertType = result.Message.Contains("KHÓA VĨNH VIỄN") ? "warning" : (result.Success ? "success" : "danger");
         return RedirectToPage(new { SearchKeyword });
     }
 
@@ -202,10 +88,13 @@ public class AccountsModel : PageModel
     /// </summary>
     public async Task<IActionResult> OnPostToggleActiveAsync(string userId)
     {
+        var currentAdmin = await _userManager.GetUserAsync(User);
+        var currentAdminId = currentAdmin?.Id ?? string.Empty;
+
         var user = await _userManager.FindByIdAsync(userId);
         if (user == null) return RedirectToPage(new { SearchKeyword });
 
-        if (User.Identity != null && User.Identity.Name == user.UserName)
+        if (user.Id == currentAdminId)
         {
             AlertMessage = "Bạn không thể tự khóa tài khoản Admin của chính mình!";
             AlertType = "warning";

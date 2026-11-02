@@ -1,25 +1,28 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using System.Data;
-using ElectronicStore_mvc.Data;
 using ElectronicStore_mvc.Models.Entities;
 using ElectronicStore_mvc.Services;
 
 namespace ElectronicStore_mvc.Controllers;
 
+/// <summary>
+/// Controller điều phối quy trình đặt hàng và thanh toán (Thin Controller)
+/// </summary>
 public class CheckoutController : Controller
 {
-    private readonly ElectronicStoreDbContext _context;
+    private readonly IProductService _productService;
+    private readonly IOrderService _orderService;
     private readonly CartService _cartService;
     private readonly UserManager<ApplicationUser> _userManager;
 
     public CheckoutController(
-        ElectronicStoreDbContext context, 
+        IProductService productService,
+        IOrderService orderService,
         CartService cartService,
         UserManager<ApplicationUser> userManager)
     {
-        _context = context;
+        _productService = productService;
+        _orderService = orderService;
         _cartService = cartService;
         _userManager = userManager;
     }
@@ -31,7 +34,7 @@ public class CheckoutController : Controller
         if (cart.Any())
         {
             var productIds = cart.Select(c => c.ProductId).ToList();
-            var dbProducts = await _context.Products.Include(p => p.Category).Where(p => productIds.Contains(p.Id)).ToListAsync();
+            var dbProducts = await _productService.GetProductsByIdsAsync(productIds);
             _cartService.SyncWithProducts(dbProducts);
             cart = _cartService.GetCart();
         }
@@ -62,25 +65,29 @@ public class CheckoutController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> Process(string fullName, string phoneNumber, string? email, string shippingAddress, string paymentMethod, string? notes)
+    public async Task<IActionResult> Process(
+        string fullName, string phoneNumber, string? email, string shippingAddress, string paymentMethod, string? notes)
     {
-        if (paymentMethod is not ("COD" or "BankTransfer" or "VNPAY" or "MOMO"))
-        {
-            TempData["ErrorMessage"] = "Phương thức thanh toán không hợp lệ.";
-            return RedirectToAction(nameof(Index));
-        }
-
         var cart = _cartService.GetCart();
         if (!cart.Any())
         {
             return RedirectToAction("Index", "Cart");
         }
 
-        await using var transaction = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
-
-        // Hàm cục bộ điền lại dữ liệu form khi validation lỗi để người dùng không phải gõ lại
-        void PreserveFormData()
+        string? currentUserId = null;
+        if (User.Identity != null && User.Identity.IsAuthenticated)
         {
+            var user = await _userManager.GetUserAsync(User);
+            currentUserId = user?.Id;
+        }
+
+        // Gọi OrderService thực hiện toàn bộ nghiệp vụ kiểm tra tồn kho, danh mục, giao dịch Serializable và trừ kho
+        var result = await _orderService.PlaceOrderAsync(
+            fullName, phoneNumber, email, shippingAddress, paymentMethod, notes, cart, currentUserId);
+
+        if (!result.Success)
+        {
+            ViewBag.ErrorMessage = result.Message;
             ViewBag.CartItems = cart;
             ViewBag.TotalAmount = _cartService.GetTotal();
             ViewBag.IsAuthenticated = User.Identity?.IsAuthenticated == true;
@@ -90,138 +97,27 @@ public class CheckoutController : Controller
             ViewBag.ShippingAddress = shippingAddress;
             ViewBag.PaymentMethod = paymentMethod;
             ViewBag.Notes = notes;
-        }
-
-        if (string.IsNullOrWhiteSpace(fullName) || string.IsNullOrWhiteSpace(phoneNumber) || string.IsNullOrWhiteSpace(shippingAddress) || shippingAddress.Trim() == "Chưa cập nhật địa chỉ")
-        {
-            ViewBag.ErrorMessage = "Vui lòng nhập đầy đủ Họ tên, Số điện thoại và Địa chỉ giao hàng!";
-            PreserveFormData();
             return View("Index");
         }
 
-        // 1. Kiểm tra tính khả dụng và tồn kho thực tế của từng sản phẩm (Chống bán khống & kiểm tra Danh mục còn hoạt động)
-        foreach (var item in cart)
-        {
-            var prod = await _context.Products.Include(p => p.Category).FirstOrDefaultAsync(p => p.Id == item.ProductId);
-            if (prod == null || !prod.IsActive || (prod.Category != null && !prod.Category.IsActive))
-            {
-                ViewBag.ErrorMessage = $"Sản phẩm '{item.ProductName}' hiện không còn kinh doanh!";
-                PreserveFormData();
-                return View("Index");
-            }
-            if (prod.Quantity < item.Quantity)
-            {
-                ViewBag.ErrorMessage = $"Sản phẩm '{prod.Name}' chỉ còn {prod.Quantity} chiếc trong kho (bạn đặt {item.Quantity} chiếc)!";
-                PreserveFormData();
-                return View("Index");
-            }
-
-            item.ProductName = prod.Name;
-            item.UnitPrice = prod.Price;
-        }
-
-        // 2. Xác định tài khoản đặt hàng (nếu đã đăng nhập thì liên kết UserId và cập nhật Profile)
-        string? currentUserId = null;
-        if (User.Identity != null && User.Identity.IsAuthenticated)
-        {
-            var user = await _userManager.GetUserAsync(User);
-            if (user != null)
-            {
-                currentUserId = user.Id;
-
-                // Tự động cập nhật thông tin bổ sung nếu tài khoản chưa có
-                bool userUpdated = false;
-                if (string.IsNullOrEmpty(user.FullName))
-                {
-                    user.FullName = fullName.Trim();
-                    userUpdated = true;
-                }
-                if (string.IsNullOrEmpty(user.PhoneNumber))
-                {
-                    user.PhoneNumber = phoneNumber.Trim();
-                    userUpdated = true;
-                }
-                if (string.IsNullOrEmpty(user.Address) || user.Address == "Chưa cập nhật địa chỉ")
-                {
-                    user.Address = shippingAddress.Trim();
-                    userUpdated = true;
-                }
-                if (userUpdated)
-                {
-                    await _userManager.UpdateAsync(user);
-                }
-            }
-        }
-
-        // 3. Tạo hóa đơn Order (UserId có thể là null cho khách vãng lai hoặc Id của thành viên)
-        var order = new Order
-        {
-            UserId = currentUserId,
-            OrderDate = DateTime.Now,
-            TotalAmount = cart.Sum(item => item.TotalPrice),
-            OrderStatus = "Pending",
-            PaymentMethod = paymentMethod ?? "COD",
-            ReceiverName = fullName.Trim(),
-            ReceiverPhone = phoneNumber.Trim(),
-            ShippingAddress = shippingAddress.Trim(),
-            Notes = notes?.Trim()
-        };
-        _context.Orders.Add(order);
-        await _context.SaveChangesAsync();
-
-        // 5. Thêm chi tiết đơn hàng OrderDetails và trừ kho sản phẩm
-        foreach (var item in cart)
-        {
-            var orderDetail = new OrderDetail
-            {
-                OrderId = order.Id,
-                ProductId = item.ProductId,
-                Quantity = item.Quantity,
-                UnitPrice = item.UnitPrice,
-                TotalPrice = item.TotalPrice
-            };
-            _context.OrderDetails.Add(orderDetail);
-
-            // Trừ số lượng tồn kho sản phẩm trong database
-            var product = await _context.Products.FindAsync(item.ProductId);
-            if (product != null)
-            {
-                product.Quantity = Math.Max(0, product.Quantity - item.Quantity);
-            }
-        }
-
-        await _context.SaveChangesAsync();
-        await transaction.CommitAsync();
-
-        // 6. Xóa sạch giỏ hàng trong session sau khi đặt hàng thành công
-        HttpContext.Session.SetInt32("LastGuestOrderId", order.Id);
+        // Xóa giỏ hàng và lưu session cho khách vãng lai
+        HttpContext.Session.SetInt32("LastGuestOrderId", result.OrderId);
         _cartService.ClearCart();
 
-        return RedirectToAction("OrderSuccess", new { id = order.Id });
+        return RedirectToAction("OrderSuccess", new { id = result.OrderId });
     }
 
     [HttpGet]
     public async Task<IActionResult> OrderSuccess(int? id, int? orderId, string? phone)
     {
         int actualId = id ?? orderId ?? HttpContext.Session.GetInt32("LastGuestOrderId") ?? 0;
-        var order = await _context.Orders
-            .Include(o => o.User)
-            .Include(o => o.OrderDetails)
-                .ThenInclude(od => od.Product)
-            .FirstOrDefaultAsync(o => o.Id == actualId);
+        var user = (User.Identity != null && User.Identity.IsAuthenticated) ? await _userManager.GetUserAsync(User) : null;
+        bool isAdmin = User.IsInRole("Admin");
+        int? lastGuestId = HttpContext.Session.GetInt32("LastGuestOrderId");
 
-        if (order != null && !User.IsInRole("Admin"))
-        {
-            var user = await _userManager.GetUserAsync(User);
-            var effectivePhone = !string.IsNullOrWhiteSpace(phone) ? phone.Trim() : user?.PhoneNumber?.Trim();
-            var ownsOrder = (user != null && order.UserId == user.Id) ||
-                            HttpContext.Session.GetInt32("LastGuestOrderId") == actualId ||
-                            (string.IsNullOrEmpty(order.UserId) && !string.IsNullOrWhiteSpace(effectivePhone) && order.ReceiverPhone == effectivePhone);
-            if (!ownsOrder)
-            {
-                order = null;
-            }
-        }
+        // Gọi OrderService kiểm tra quyền sở hữu đơn hàng bảo mật IDOR
+        var order = await _orderService.GetOrderForViewerAsync(
+            actualId, user?.Id, user?.PhoneNumber, isAdmin, lastGuestId, phone);
 
         return View(order);
     }

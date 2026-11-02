@@ -1,6 +1,6 @@
 @page "/admin/orders"
 @layout AdminLayout
-@inject IProductService ProductService
+@inject IOrderService OrderService
 @inject IJSRuntime JS
 
 <PageTitle>Admin - Duyệt Đơn Hàng - ElectroStore</PageTitle>
@@ -385,7 +385,7 @@
 
     private void LoadOrders()
     {
-        orders = ProductService.GetOrders();
+        orders = OrderService.GetOrders();
         ApplyFilter();
     }
 
@@ -451,7 +451,7 @@
 
     private void ChangeStatus(int orderId, string newStatus)
     {
-        ProductService.UpdateOrderStatus(orderId, newStatus);
+        OrderService.UpdateOrderStatus(orderId, newStatus);
         var statusText = newStatus switch
         {
             "Confirmed" => "Đã duyệt",

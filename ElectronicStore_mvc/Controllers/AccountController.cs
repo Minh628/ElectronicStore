@@ -2,16 +2,25 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using ElectronicStore_mvc.Models.Entities;
+using ElectronicStore_mvc.Services;
 
 namespace ElectronicStore_mvc.Controllers;
 
+/// <summary>
+/// Controller xử lý xác thực, đăng nhập/đăng ký và hồ sơ người dùng (Thin Controller)
+/// </summary>
 public class AccountController : Controller
 {
+    private readonly IAccountService _accountService;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
 
-    public AccountController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager)
+    public AccountController(
+        IAccountService accountService,
+        UserManager<ApplicationUser> userManager,
+        SignInManager<ApplicationUser> signInManager)
     {
+        _accountService = accountService;
         _userManager = userManager;
         _signInManager = signInManager;
     }
@@ -40,7 +49,7 @@ public class AccountController : Controller
     }
 
     /// <summary>
-    /// Xử lý xác thực đăng nhập Cổng Quản Trị Viên
+    /// Xử lý xác thực đăng nhập Cổng Quản Trị Viên thông qua AccountService
     /// </summary>
     [HttpPost]
     [Route("admin/login")]
@@ -48,27 +57,14 @@ public class AccountController : Controller
     {
         ViewBag.ReturnUrl = returnUrl;
 
-        if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+        var validation = await _accountService.ValidateAdminLoginAsync(username, password);
+        if (!validation.Success || validation.User == null)
         {
-            ViewBag.ErrorMessage = "Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu quản trị!";
+            ViewBag.ErrorMessage = validation.Message;
             return View();
         }
 
-        var user = await _userManager.FindByNameAsync(username.Trim());
-        if (user == null)
-        {
-            ViewBag.ErrorMessage = "Tài khoản hoặc mật khẩu quản trị không chính xác!";
-            return View();
-        }
-
-        // KIỂM TRA ROLE ADMIN: Chặn hoàn toàn tài khoản khách hàng thông thường
-        var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
-        if (!isAdmin)
-        {
-            ViewBag.ErrorMessage = "Truy cập bị từ chối: Tài khoản của bạn không có quyền truy cập vào Cổng Quản Trị Hệ Thống!";
-            return View();
-        }
-
+        var user = validation.User;
         if (!user.IsActive)
         {
             ViewBag.ErrorMessage = "Tài khoản quản trị viên này hiện đang bị tạm khóa!";
@@ -89,33 +85,22 @@ public class AccountController : Controller
         return View();
     }
 
+    /// <summary>
+    /// Xử lý xác thực đăng nhập Cổng Khách Hàng (chặn tài khoản Admin để bảo mật phân tách cổng)
+    /// </summary>
     [HttpPost]
     public async Task<IActionResult> Login(string username, string password, string? returnUrl)
     {
         ViewBag.ReturnUrl = returnUrl;
 
-        if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+        var validation = await _accountService.ValidateCustomerLoginAsync(username, password);
+        if (!validation.Success || validation.User == null)
         {
-            ViewBag.ErrorMessage = "Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu!";
+            ViewBag.ErrorMessage = validation.Message;
             return View();
         }
 
-        var user = await _userManager.FindByNameAsync(username.Trim());
-        if (user == null)
-        {
-            ViewBag.ErrorMessage = "Tên đăng nhập hoặc mật khẩu không chính xác!";
-            return View();
-        }
-
-        // BẢO MẬT & PHÂN TÁCH CỔNG: Chặn tuyệt đối tài khoản Admin đăng nhập tại cổng End-User
-        // Bất kể đúng hay sai mật khẩu, trả về lỗi chung để chống Username Enumeration
-        var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
-        if (isAdmin)
-        {
-            ViewBag.ErrorMessage = "Tên đăng nhập hoặc mật khẩu không chính xác!";
-            return View();
-        }
-
+        var user = validation.User;
         if (!user.IsActive)
         {
             ViewBag.ErrorMessage = "Tài khoản của bạn đã bị Admin KHÓA! Vui lòng liên hệ ban quản trị.";
@@ -145,42 +130,21 @@ public class AccountController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> Register(string username, string password, string fullName, string? email, string? phoneNumber, string? phone, string? address, string? returnUrl)
+    public async Task<IActionResult> Register(
+        string username, string password, string fullName, string? email, string? phoneNumber, string? phone, string? address, string? returnUrl)
     {
         ViewBag.ReturnUrl = returnUrl;
         var actualPhone = !string.IsNullOrWhiteSpace(phoneNumber) ? phoneNumber : phone;
-        if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password) || string.IsNullOrWhiteSpace(fullName))
-        {
-            ViewBag.ErrorMessage = "Vui lòng điền đầy đủ các thông tin bắt buộc!";
-            return View();
-        }
+        var actualEmail = string.IsNullOrWhiteSpace(email) ? $"{username.Trim()}@electrostore.vn" : email.Trim();
 
-        var existingUser = await _userManager.FindByNameAsync(username.Trim());
-        if (existingUser != null)
-        {
-            ViewBag.ErrorMessage = "Tên đăng nhập này đã được sử dụng. Vui lòng chọn tên khác!";
-            return View();
-        }
+        var regResult = await _accountService.RegisterAsync(
+            username, fullName, actualEmail, actualPhone ?? "0900000000", address ?? "Chưa cập nhật địa chỉ", password);
 
-        // Tạo ApplicationUser kế thừa IdentityUser chuẩn
-        var user = new ApplicationUser
+        if (regResult.Success && regResult.User != null)
         {
-            UserName = username.Trim(),
-            FullName = fullName.Trim(),
-            Email = string.IsNullOrWhiteSpace(email) ? $"{username.Trim()}@electrostore.vn" : email.Trim(),
-            PhoneNumber = actualPhone?.Trim() ?? "0900000000",
-            Address = string.IsNullOrWhiteSpace(address) ? "Chưa cập nhật địa chỉ" : address.Trim(),
-            IsActive = true,
-            CreatedAt = DateTime.Now
-        };
+            await _signInManager.SignInAsync(regResult.User, isPersistent: true);
 
-        var createResult = await _userManager.CreateAsync(user, password.Trim());
-        if (createResult.Succeeded)
-        {
-            await _userManager.AddToRoleAsync(user, "Customer");
-            await _signInManager.SignInAsync(user, isPersistent: true);
-
-            // Điều hướng quay lại trang thanh toán hoặc url ban đầu nếu có
+            // Điều hướng quay lại URL ban đầu nếu có
             if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
             {
                 return Redirect(returnUrl);
@@ -188,7 +152,7 @@ public class AccountController : Controller
             return RedirectToAction("Index", "Home");
         }
 
-        ViewBag.ErrorMessage = string.Join("; ", createResult.Errors.Select(e => e.Description));
+        ViewBag.ErrorMessage = regResult.Message;
         return View();
     }
 
@@ -207,7 +171,8 @@ public class AccountController : Controller
 
     [Microsoft.AspNetCore.Authorization.Authorize]
     [HttpPost]
-    public async Task<IActionResult> Profile(string fullName, string email, string? phoneNumber, string? address, string? currentPassword, string? newPassword, string? confirmPassword)
+    public async Task<IActionResult> Profile(
+        string fullName, string email, string? phoneNumber, string? address, string? currentPassword, string? newPassword, string? confirmPassword)
     {
         var user = await _userManager.GetUserAsync(User);
         if (user == null)
@@ -221,13 +186,15 @@ public class AccountController : Controller
             return View(user);
         }
 
-        // Cập nhật thông tin cá nhân
-        user.FullName = fullName.Trim();
-        user.Email = email.Trim();
-        user.PhoneNumber = string.IsNullOrWhiteSpace(phoneNumber) ? null : phoneNumber.Trim();
-        user.Address = string.IsNullOrWhiteSpace(address) || address.Trim() == "Chưa cập nhật địa chỉ" ? null : address.Trim();
+        // Cập nhật thông tin qua AccountService
+        var updateProfile = await _accountService.UpdateProfileAsync(user.Id, fullName, phoneNumber ?? "", address ?? "");
+        if (!updateProfile.Success)
+        {
+            ViewBag.ErrorMessage = updateProfile.Message;
+            return View(user);
+        }
 
-        // Xử lý đổi mật khẩu nếu có
+        // Đổi mật khẩu nếu có
         if (!string.IsNullOrWhiteSpace(newPassword))
         {
             if (string.IsNullOrWhiteSpace(currentPassword))
@@ -242,23 +209,16 @@ public class AccountController : Controller
                 return View(user);
             }
 
-            var changePassResult = await _userManager.ChangePasswordAsync(user, currentPassword, newPassword);
-            if (!changePassResult.Succeeded)
+            var changePass = await _accountService.ChangePasswordAsync(user.Id, currentPassword, newPassword);
+            if (!changePass.Success)
             {
-                ViewBag.ErrorMessage = string.Join("; ", changePassResult.Errors.Select(e => e.Description));
+                ViewBag.ErrorMessage = changePass.Message;
                 return View(user);
             }
         }
 
-        var updateResult = await _userManager.UpdateAsync(user);
-        if (updateResult.Succeeded)
-        {
-            await _signInManager.RefreshSignInAsync(user);
-            ViewBag.SuccessMessage = "Cập nhật thông tin tài khoản thành công!";
-            return View(user);
-        }
-
-        ViewBag.ErrorMessage = string.Join("; ", updateResult.Errors.Select(e => e.Description));
+        await _signInManager.RefreshSignInAsync(user);
+        ViewBag.SuccessMessage = "Cập nhật thông tin tài khoản thành công!";
         return View(user);
     }
 

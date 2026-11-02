@@ -1,160 +1,273 @@
-﻿using ElectronicStore_razor.Models;
+using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
+using ElectronicStore_razor.Data;
+using ElectronicStore_razor.Models.Entities;
 
 namespace ElectronicStore_razor.Services;
 
 /// <summary>
-/// Quản lý dữ liệu và logic thao tác với sản phẩm
+/// Triển khai nghiệp vụ sản phẩm điện tử trong Razor Pages
 /// </summary>
 public class ProductService : IProductService
 {
-    // Danh sách dữ liệu mẫu mô phỏng từ database
-    private readonly List<Product> _products = new()
-    {
-        new Product
-        {
-            Id = 1,
-            Name = "Laptop Dell XPS 13",
-            Description = "Laptop mỏng nhẹ cao cấp, màn hình sắc nét InfinityEdge, vi xử lý Intel Core i7 thế hệ mới giúp xử lý mượt mà mọi tác vụ văn phòng và đồ họa.",
-            ImageUrl = "https://images.unsplash.com/photo-1593642632823-8f785ba67e45?auto=format&fit=crop&w=600&q=80",
-            Price = 25000000m,
-            Quantity = 10
-        },
-        new Product
-        {
-            Id = 2,
-            Name = "Bàn phím cơ Logi",
-            Description = "Bàn phím cơ gõ êm, trang bị switch cơ học phản hồi nhanh, đèn LED RGB rực rỡ và hỗ trợ kết nối đa thiết bị không dây Bluetooth.",
-            ImageUrl = "https://images.unsplash.com/photo-1587829741301-dc798b83add3?auto=format&fit=crop&w=600&q=80",
-            Price = 1500000m,
-            Quantity = 5
-        },
-        new Product
-        {
-            Id = 3,
-            Name = "Chuột Wireless",
-            Description = "Chuột ergonomic chống mỏi cổ tay, cảm biến quang học độ chính xác cao 4000 DPI, pin sử dụng liên tục lên đến 70 ngày.",
-            ImageUrl = "https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?auto=format&fit=crop&w=600&q=80",
-            Price = 500000m,
-            Quantity = 0 // Số lượng = 0 để kiểm tra trạng thái "Hết hàng"
-        },
-        new Product
-        {
-            Id = 4,
-            Name = "Màn hình Dell UltraSharp 27\"",
-            Description = "Màn hình đồ họa chuẩn 4K IPS, độ phủ màu 99% sRGB, viền siêu mỏng phù hợp cho thiết kế đồ họa chuyên nghiệp và dựng phim.",
-            ImageUrl = "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=600&q=80",
-            Price = 11500000m,
-            Quantity = 7
-        },
-        new Product
-        {
-            Id = 5,
-            Name = "Tai nghe Chống ồn Sony",
-            Description = "Tai nghe over-ear công nghệ chống ồn chủ động đỉnh cao Noise Canceling, chất âm chân thực Hi-Res Audio, thời lượng pin 30 giờ.",
-            ImageUrl = "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80",
-            Price = 6900000m,
-            Quantity = 3
-        },
-        new Product
-        {
-            Id = 6,
-            Name = "Ổ cứng di động SSD 1TB",
-            Description = "Tốc độ đọc ghi cực nhanh lên đến 1050MB/s, chuẩn kết nối USB Type-C, thiết kế siêu nhỏ gọn và chống sốc bền bỉ.",
-            ImageUrl = "https://images.unsplash.com/photo-1597872200969-2b65d56bd16b?auto=format&fit=crop&w=600&q=80",
-            Price = 2800000m,
-            Quantity = 0 // Hết hàng
-        }
-    };
+    private readonly ElectronicStoreDbContext _context;
 
-    // Khóa luồng đồng bộ để đảm bảo an toàn đa luồng (Thread-safety) khi có nhiều request đồng thời
-    private readonly object _lock = new();
-
-    public List<Product> GetAllProducts()
+    public ProductService(ElectronicStoreDbContext context)
     {
-        lock (_lock)
-        {
-            // Trả về bản sao danh sách để tránh xung đột luồng khi duyệt bên ngoài
-            return new List<Product>(_products);
-        }
+        _context = context;
     }
 
-    public Product? GetProductById(int id)
+    public async Task<ProductCatalogResult> GetCatalogProductsAsync(
+        int? categoryId, string? brand, string? search, string? sortBy, int currentPage = 1, int pageSize = 8)
     {
-        lock (_lock)
+        var query = _context.Products
+            .Include(p => p.Category)
+            .Where(p => p.IsActive && p.Category != null && p.Category.IsActive);
+
+        if (categoryId.HasValue && categoryId.Value > 0)
         {
-            return _products.FirstOrDefault(p => p.Id == id);
+            query = query.Where(p => p.CategoryId == categoryId.Value);
         }
+
+        if (!string.IsNullOrWhiteSpace(brand))
+        {
+            var brandLower = brand.Trim().ToLower();
+            query = query.Where(p => p.Brand.ToLower() == brandLower);
+        }
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var kw = search.Trim().ToLower();
+            query = query.Where(p => p.Name.ToLower().Contains(kw) ||
+                                     p.Brand.ToLower().Contains(kw) ||
+                                     (p.Specifications != null && p.Specifications.ToLower().Contains(kw)));
+        }
+
+        int totalProducts = await query.CountAsync();
+        int totalPages = (int)Math.Ceiling(totalProducts / (double)pageSize);
+        if (currentPage < 1) currentPage = 1;
+        if (currentPage > totalPages && totalPages > 0) currentPage = totalPages;
+
+        query = sortBy switch
+        {
+            "price-asc" => query.OrderBy(p => p.Price),
+            "price-desc" => query.OrderByDescending(p => p.Price),
+            _ => query.OrderByDescending(p => p.Id)
+        };
+
+        var products = await query
+            .Skip((currentPage - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return new ProductCatalogResult
+        {
+            Products = products,
+            TotalProducts = totalProducts,
+            TotalPages = totalPages,
+            CurrentPage = currentPage
+        };
     }
 
-    /// <summary>
-    /// Xử lý nghiệp vụ mua sản phẩm:
-    /// Kiểm tra số lượng tồn kho, nếu còn hàng thì giảm số lượng và ghi nhận thành công.
-    /// </summary>
-    public bool BuyProduct(int id)
+    public async Task<List<string>> GetActiveBrandsAsync()
     {
-        lock (_lock)
+        return await _context.Products
+            .Where(p => p.IsActive && p.Category != null && p.Category.IsActive)
+            .Select(p => p.Brand)
+            .Distinct()
+            .ToListAsync();
+    }
+
+    public async Task<Product?> GetProductDetailAsync(int? id)
+    {
+        if (id.HasValue && id.Value > 0)
         {
-            var product = _products.FirstOrDefault(p => p.Id == id);
-            if (product == null || product.Quantity <= 0)
+            return await _context.Products
+                .Include(p => p.Category)
+                .FirstOrDefaultAsync(p => p.Id == id.Value && p.IsActive && p.Category != null && p.Category.IsActive);
+        }
+
+        return await _context.Products
+            .Include(p => p.Category)
+            .FirstOrDefaultAsync(p => p.IsActive && p.Category != null && p.Category.IsActive);
+    }
+
+    public async Task<List<Product>> GetRelatedProductsAsync(int categoryId, int excludeProductId, int count = 4)
+    {
+        return await _context.Products
+            .Where(p => p.CategoryId == categoryId && p.Id != excludeProductId && p.IsActive && p.Category != null && p.Category.IsActive)
+            .Take(count)
+            .ToListAsync();
+    }
+
+    public async Task<List<Product>> GetProductsByIdsAsync(IEnumerable<int> ids)
+    {
+        return await _context.Products
+            .Include(p => p.Category)
+            .Where(p => ids.Contains(p.Id))
+            .ToListAsync();
+    }
+
+    public async Task<Product?> GetProductForCartAsync(int productId)
+    {
+        return await _context.Products
+            .Include(p => p.Category)
+            .FirstOrDefaultAsync(p => p.Id == productId);
+    }
+
+    public async Task<ProductAdminResult> GetAdminProductsAsync(
+        int? categoryId, string? brand, string? search, int currentPage = 1, int pageSize = 10)
+    {
+        var allQuery = _context.Products.AsQueryable();
+        int totalSystemProducts = await allQuery.CountAsync();
+        int inStockCount = await allQuery.CountAsync(p => p.Quantity > 0);
+        int lowOrOutCount = await allQuery.CountAsync(p => p.Quantity <= 5);
+
+        var query = _context.Products.Include(p => p.Category).AsQueryable();
+
+        if (categoryId.HasValue && categoryId.Value > 0)
+        {
+            query = query.Where(p => p.CategoryId == categoryId.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(brand))
+        {
+            var brandLower = brand.Trim().ToLower();
+            query = query.Where(p => p.Brand.ToLower() == brandLower);
+        }
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var kw = search.Trim().ToLower();
+            query = query.Where(p => p.Name.ToLower().Contains(kw) || p.Brand.ToLower().Contains(kw));
+        }
+
+        int totalCount = await query.CountAsync();
+        int totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+        if (totalPages < 1) totalPages = 1;
+        if (currentPage < 1) currentPage = 1;
+        if (currentPage > totalPages) currentPage = totalPages;
+
+        var products = await query.OrderByDescending(p => p.Id)
+            .Skip((currentPage - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return new ProductAdminResult
+        {
+            Products = products,
+            TotalSystemProducts = totalSystemProducts,
+            InStockCount = inStockCount,
+            LowOrOutCount = lowOrOutCount,
+            TotalCount = totalCount,
+            TotalPages = totalPages,
+            CurrentPage = currentPage
+        };
+    }
+
+    public async Task<(bool Success, string Message)> SaveProductAsync(
+        Product product, IFormFile? imageFile, string webRootPath)
+    {
+        if (string.IsNullOrWhiteSpace(product.Name) || product.Price <= 0 || product.Quantity < 0 || product.CategoryId <= 0)
+        {
+            return (false, "Vui lòng nhập đầy đủ Tên, Danh mục, Đơn giá (> 0) và Tồn kho hợp lệ!");
+        }
+
+        if (imageFile != null && imageFile.Length > 0)
+        {
+            if (imageFile.Length > 5 * 1024 * 1024)
             {
-                return false;
+                return (false, "Ảnh sản phẩm không được vượt quá 5 MB.");
             }
 
-            product.Quantity--;
-            return true;
-        }
-    }
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+            var extension = Path.GetExtension(imageFile.FileName).ToLowerInvariant();
+            if (!allowedExtensions.Contains(extension))
+            {
+                return (false, "Chỉ chấp nhận ảnh JPG, JPEG, PNG hoặc WEBP.");
+            }
 
-    /// <summary>
-    /// Thêm sản phẩm mới vào danh sách, tự động sinh Id tăng dần
-    /// </summary>
-    public void AddProduct(Product product)
-    {
-        lock (_lock)
-        {
-            // Tự động tạo Id mới lớn hơn Id lớn nhất hiện tại
-            product.Id = _products.Count > 0 ? _products.Max(p => p.Id) + 1 : 1;
-            _products.Add(product);
-        }
-    }
+            var uploadsFolder = Path.Combine(webRootPath, "images", "products");
+            if (!Directory.Exists(uploadsFolder))
+            {
+                Directory.CreateDirectory(uploadsFolder);
+            }
 
-    /// <summary>
-    /// Cập nhật thông tin chi tiết của sản phẩm theo Id
-    /// </summary>
-    public bool UpdateProduct(Product product)
-    {
-        lock (_lock)
+            var uniqueFileName = $"{Guid.NewGuid():N}{extension}";
+            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await imageFile.CopyToAsync(stream);
+            }
+            product.ImageUrl = $"/images/products/{uniqueFileName}";
+        }
+
+        if (product.Id == 0)
         {
-            var existing = _products.FirstOrDefault(p => p.Id == product.Id);
+            _context.Products.Add(product);
+            await _context.SaveChangesAsync();
+            return (true, $"Đã thêm mới thiết bị '{product.Name}' thành công!");
+        }
+        else
+        {
+            var existing = await _context.Products.FindAsync(product.Id);
             if (existing == null)
             {
-                return false;
+                return (false, "Không tìm thấy thiết bị cần cập nhật!");
             }
 
-            // Cập nhật lại các trường thông tin
             existing.Name = product.Name;
-            existing.Description = product.Description;
-            existing.ImageUrl = product.ImageUrl;
+            existing.Brand = product.Brand;
+            existing.CategoryId = product.CategoryId;
             existing.Price = product.Price;
             existing.Quantity = product.Quantity;
-            return true;
+            existing.WarrantyMonths = product.WarrantyMonths;
+            if (!string.IsNullOrWhiteSpace(product.ImageUrl))
+            {
+                existing.ImageUrl = product.ImageUrl;
+            }
+            existing.Specifications = product.Specifications;
+            existing.Description = product.Description;
+            existing.IsActive = product.IsActive;
+
+            await _context.SaveChangesAsync();
+            return (true, $"Đã cập nhật thành công thiết bị '{existing.Name}'!");
         }
     }
 
-    /// <summary>
-    /// Xóa sản phẩm khỏi danh sách theo Id
-    /// </summary>
-    public bool DeleteProduct(int id)
+    public async Task<(bool Success, string Message)> DeleteProductAsync(int id)
     {
-        lock (_lock)
+        var prod = await _context.Products.FindAsync(id);
+        if (prod == null)
         {
-            var product = _products.FirstOrDefault(p => p.Id == id);
-            if (product == null)
-            {
-                return false;
-            }
-
-            return _products.Remove(product);
+            return (false, "Không tìm thấy thiết bị!");
         }
+
+        bool hasOrders = await _context.OrderDetails.AnyAsync(d => d.ProductId == id);
+        if (hasOrders)
+        {
+            prod.IsActive = false;
+            await _context.SaveChangesAsync();
+            return (true, $"Thiết bị '{prod.Name}' đã có lịch sử đơn hàng. Hệ thống đã tự động chuyển sang trạng thái TẠM ẨN / NGỪNG KINH DOANH.");
+        }
+        else
+        {
+            _context.Products.Remove(prod);
+            await _context.SaveChangesAsync();
+            return (true, $"Đã xóa vĩnh viễn thiết bị '{prod.Name}'.");
+        }
+    }
+
+    public async Task<(bool Success, string Message)> ToggleProductStatusAsync(int id)
+    {
+        var prod = await _context.Products.FindAsync(id);
+        if (prod == null)
+        {
+            return (false, "Không tìm thấy thiết bị!");
+        }
+
+        prod.IsActive = !prod.IsActive;
+        await _context.SaveChangesAsync();
+        return (true, $"Đã {(prod.IsActive ? "bật hiển thị" : "tạm ẩn")} thiết bị '{prod.Name}'!");
     }
 }

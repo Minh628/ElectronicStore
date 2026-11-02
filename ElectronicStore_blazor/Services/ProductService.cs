@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using System.Data;
 using ElectronicStore_blazor.Data;
 using ElectronicStore_blazor.Models;
 using ElectronicStore_blazor.Models.Entities;
@@ -7,23 +6,31 @@ using ElectronicStore_blazor.Models.Entities;
 namespace ElectronicStore_blazor.Services;
 
 /// <summary>
-/// Service kết nối và thao tác trực tiếp với cơ sở dữ liệu SQL Server (ElectronicStoreDb)
+/// Service quản lý thiết bị/sản phẩm điện tử (kết nối IDbContextFactory an toàn cho Blazor Server)
+/// và điều phối các miền nghiệp vụ Category, Order thông qua các Service chuyên biệt
 /// </summary>
 public class ProductService : IProductService
 {
     private readonly IDbContextFactory<ElectronicStoreDbContext> _contextFactory;
+    private readonly ICategoryService _categoryService;
+    private readonly IOrderService _orderService;
 
-    public ProductService(IDbContextFactory<ElectronicStoreDbContext> contextFactory)
+    public ProductService(
+        IDbContextFactory<ElectronicStoreDbContext> contextFactory,
+        ICategoryService categoryService,
+        IOrderService orderService)
     {
         _contextFactory = contextFactory;
+        _categoryService = categoryService;
+        _orderService = orderService;
     }
 
-    #region 1. SẢN PHẨM KHÁCH HÀNG
+    #region 1. SẢN PHẨM KHÁCH HÀNG (END-USER)
     public List<Product> GetAllProducts(int? categoryId = null, string? search = null)
     {
         using var context = _contextFactory.CreateDbContext();
         var query = context.Products.Include(p => p.Category)
-            .Where(p => p.IsActive && p.Category.IsActive).AsQueryable();
+            .Where(p => p.IsActive && p.Category != null && p.Category.IsActive).AsQueryable();
 
         if (categoryId.HasValue && categoryId.Value > 0)
         {
@@ -43,15 +50,14 @@ public class ProductService : IProductService
     {
         using var context = _contextFactory.CreateDbContext();
         return context.Products.Include(p => p.Category)
-            .FirstOrDefault(p => p.Id == id && p.IsActive && p.Category.IsActive);
+            .FirstOrDefault(p => p.Id == id && p.IsActive && p.Category != null && p.Category.IsActive);
     }
 
     public bool BuyProduct(int id)
     {
         using var context = _contextFactory.CreateDbContext();
-        // Kiểm tra cả trạng thái hoạt động của sản phẩm và danh mục cha trước khi trừ kho
-        var product = context.Products.Include(p => p.Category).FirstOrDefault(p => p.Id == id);
-        if (product != null && product.IsActive && (product.Category == null || product.Category.IsActive) && product.Quantity > 0)
+        var product = context.Products.Find(id);
+        if (product != null && product.Quantity > 0)
         {
             product.Quantity--;
             context.SaveChanges();
@@ -61,18 +67,19 @@ public class ProductService : IProductService
     }
     #endregion
 
-    #region 2. QUẢN TRỊ SẢN PHẨM
+    #region 2. QUẢN TRỊ SẢN PHẨM (ADMIN)
     public List<Product> GetAllAdminProducts()
     {
         using var context = _contextFactory.CreateDbContext();
-        return context.Products.Include(p => p.Category).OrderByDescending(p => p.Id).ToList();
+        return context.Products
+            .Include(p => p.Category)
+            .OrderByDescending(p => p.Id)
+            .ToList();
     }
 
     public void AddProduct(Product product)
     {
         using var context = _contextFactory.CreateDbContext();
-        if (product.CategoryId == 0) product.CategoryId = 1;
-        if (string.IsNullOrWhiteSpace(product.Brand)) product.Brand = "Chính Hãng";
         context.Products.Add(product);
         context.SaveChanges();
     }
@@ -84,8 +91,8 @@ public class ProductService : IProductService
         if (existing != null)
         {
             existing.Name = product.Name;
-            existing.CategoryId = product.CategoryId;
             existing.Brand = product.Brand;
+            existing.CategoryId = product.CategoryId;
             existing.Price = product.Price;
             existing.Quantity = product.Quantity;
             existing.WarrantyMonths = product.WarrantyMonths;
@@ -99,48 +106,48 @@ public class ProductService : IProductService
         return false;
     }
 
-    public (bool Success, bool SoftDeleted, string ProductName) DeleteProductWithStatus(int id)
-    {
-        using var context = _contextFactory.CreateDbContext();
-        var product = context.Products.Include(p => p.OrderDetails).FirstOrDefault(p => p.Id == id);
-        if (product != null)
-        {
-            var prodName = product.Name;
-            if (product.OrderDetails.Any())
-            {
-                product.IsActive = false;
-                context.SaveChanges();
-                return (true, true, prodName);
-            }
-            else
-            {
-                context.Products.Remove(product);
-                context.SaveChanges();
-                return (true, false, prodName);
-            }
-        }
-        return (false, false, string.Empty);
-    }
-
     public bool DeleteProduct(int id)
     {
         using var context = _contextFactory.CreateDbContext();
-        var product = context.Products.Include(p => p.OrderDetails).FirstOrDefault(p => p.Id == id);
+        var product = context.Products.Find(id);
         if (product != null)
         {
-            // Nếu sản phẩm đã phát sinh đơn hàng thì ẩn (soft delete), nếu chưa thì xóa hẳn
-            if (product.OrderDetails.Any())
+            bool hasOrders = context.OrderDetails.Any(d => d.ProductId == id);
+            if (hasOrders)
             {
                 product.IsActive = false;
+                context.SaveChanges();
+                return true;
             }
-            else
-            {
-                context.Products.Remove(product);
-            }
+
+            context.Products.Remove(product);
             context.SaveChanges();
             return true;
         }
         return false;
+    }
+
+    public (bool Success, bool SoftDeleted, string ProductName) DeleteProductWithStatus(int id)
+    {
+        using var context = _contextFactory.CreateDbContext();
+        var product = context.Products.Find(id);
+        if (product == null)
+        {
+            return (false, false, string.Empty);
+        }
+
+        string prodName = product.Name;
+        bool hasOrders = context.OrderDetails.Any(d => d.ProductId == id);
+        if (hasOrders)
+        {
+            product.IsActive = false;
+            context.SaveChanges();
+            return (true, true, prodName);
+        }
+
+        context.Products.Remove(product);
+        context.SaveChanges();
+        return (true, false, prodName);
     }
 
     public bool ToggleProductActive(int id)
@@ -157,341 +164,26 @@ public class ProductService : IProductService
     }
     #endregion
 
-    #region 3. QUẢN LÝ DANH MỤC
-    public List<Category> GetCategories()
-    {
-        using var context = _contextFactory.CreateDbContext();
-        return context.Categories.Include(c => c.Products).OrderBy(c => c.Id).ToList();
-    }
-
-    public void SaveCategory(Category category)
-    {
-        using var context = _contextFactory.CreateDbContext();
-        if (category.Id == 0)
-        {
-            category.Name = category.Name.Trim();
-            category.Description = category.Description?.Trim();
-            context.Categories.Add(category);
-        }
-        else
-        {
-            var existing = context.Categories.Find(category.Id);
-            if (existing != null)
-            {
-                existing.Name = category.Name.Trim();
-                existing.Description = category.Description?.Trim();
-                // Đồng bộ trạng thái ẩn/hiện danh mục từ Modal
-                existing.IsActive = category.IsActive;
-            }
-        }
-        context.SaveChanges();
-    }
-
-    public bool ToggleCategoryActive(int id)
-    {
-        using var context = _contextFactory.CreateDbContext();
-        var category = context.Categories.Find(id);
-        if (category != null)
-        {
-            // Khi ẩn danh mục, toàn bộ sản phẩm thuộc danh mục này sẽ tự động bị ẩn trên trang khách hàng
-            category.IsActive = !category.IsActive;
-            context.SaveChanges();
-            return true;
-        }
-        return false;
-    }
-
-    public (bool Success, string Message) DeleteCategory(int id)
-    {
-        using var context = _contextFactory.CreateDbContext();
-        var category = context.Categories.Include(c => c.Products).FirstOrDefault(c => c.Id == id);
-        if (category == null)
-        {
-            return (false, "Không tìm thấy danh mục!");
-        }
-
-        if (category.Products.Any())
-        {
-            // Tự động chuyển sang trạng thái Tạm ẩn (Soft Delete) để ẩn danh mục và toàn bộ sản phẩm trực thuộc trên trang khách hàng
-            category.IsActive = false;
-            context.SaveChanges();
-            return (true, $"Danh mục '{category.Name}' đang có {category.Products.Count} sản phẩm liên kết nên được tự động chuyển sang trạng thái TẠM ẨN (ẩn toàn bộ sản phẩm thuộc danh mục trên cửa hàng) thay vì xóa vĩnh viễn.");
-        }
-
-        context.Categories.Remove(category);
-        context.SaveChanges();
-        return (true, $"Đã xóa vĩnh viễn danh mục: {category.Name}");
-    }
+    #region 3. ĐIỀU PHỐI DANH MỤC QUA ICategoryService
+    public List<Category> GetCategories() => _categoryService.GetCategories();
+    public void SaveCategory(Category category) => _categoryService.SaveCategory(category);
+    public (bool Success, string Message) DeleteCategory(int id) => _categoryService.DeleteCategory(id);
+    public bool ToggleCategoryActive(int id) => _categoryService.ToggleCategoryActive(id);
     #endregion
 
-    #region 4. QUẢN LÝ ĐƠN HÀNG
-    public List<Order> GetOrders(string? status = null)
-    {
-        using var context = _contextFactory.CreateDbContext();
-        var query = context.Orders
-            .Include(o => o.User)
-            .Include(o => o.OrderDetails)
-                .ThenInclude(od => od.Product)
-            .AsQueryable();
-
-        if (!string.IsNullOrWhiteSpace(status))
-        {
-            var statusLower = status.Trim().ToLower();
-            query = statusLower switch
-            {
-                "pending" or "chờ xử lý" => query.Where(o => o.OrderStatus == "Pending" || o.OrderStatus == "Chờ xử lý"),
-                "confirmed" or "đã duyệt" => query.Where(o => o.OrderStatus == "Confirmed" || o.OrderStatus == "Đã duyệt"),
-                "shipping" or "đang giao" or "đang giao hàng" => query.Where(o => o.OrderStatus == "Shipping" || o.OrderStatus == "Đang giao" || o.OrderStatus == "Đang giao hàng"),
-                "completed" or "hoàn thành" or "đã giao" or "hoàn tất" => query.Where(o => o.OrderStatus == "Completed" || o.OrderStatus == "Hoàn thành" || o.OrderStatus == "Đã giao" || o.OrderStatus == "Hoàn tất"),
-                "cancelled" or "đã hủy" => query.Where(o => o.OrderStatus == "Cancelled" || o.OrderStatus == "Đã hủy"),
-                _ => query.Where(o => o.OrderStatus == status)
-            };
-        }
-
-        return query.OrderByDescending(o => o.OrderDate).ToList();
-    }
-
+    #region 4. ĐIỀU PHỐI ĐƠN HÀNG QUA IOrderService
+    public List<Order> GetOrders(string? status = null) => _orderService.GetOrders(status);
     public Order? GetOrderById(int id, string? requesterUserId = null, bool requesterIsAdmin = false, int? guestOrderId = null, string? guestPhone = null)
-    {
-        using var context = _contextFactory.CreateDbContext();
-        var query = context.Orders
-            .Include(o => o.User)
-            .Include(o => o.OrderDetails)
-                .ThenInclude(od => od.Product)
-            .Where(o => o.Id == id);
-
-        if (requesterIsAdmin)
-        {
-            return query.FirstOrDefault();
-        }
-
-        return query.FirstOrDefault(o =>
-            (requesterUserId != null && o.UserId == requesterUserId) ||
-            (guestOrderId != null && guestOrderId == o.Id) ||
-            (!string.IsNullOrWhiteSpace(guestPhone) && o.ReceiverPhone == guestPhone.Trim()));
-    }
-
-    public bool UpdateOrderStatus(int orderId, string status)
-    {
-        status = NormalizeStatus(status);
-        if (status is not ("Pending" or "Confirmed" or "Shipping" or "Completed" or "Cancelled"))
-        {
-            return false;
-        }
-
-        using var context = _contextFactory.CreateDbContext();
-        var order = context.Orders.Include(o => o.OrderDetails).FirstOrDefault(o => o.Id == orderId);
-        if (order != null)
-        {
-            var previousStatus = NormalizeStatus(order.OrderStatus);
-            // Nếu chuyển trạng thái sang Cancelled từ trạng thái khác -> hoàn lại kho
-            if (status == "Cancelled" && previousStatus != "Cancelled")
-            {
-                foreach (var detail in order.OrderDetails)
-                {
-                    var product = context.Products.Find(detail.ProductId);
-                    if (product != null)
-                    {
-                        product.Quantity += detail.Quantity;
-                    }
-
-                }
-            }
-            else if (previousStatus == "Cancelled" && status != "Cancelled")
-            {
-                foreach (var detail in order.OrderDetails)
-                {
-                    var product = context.Products.Find(detail.ProductId);
-                    if (product != null)
-                    {
-                        product.Quantity = Math.Max(0, product.Quantity - detail.Quantity);
-                    }
-                }
-            }
-
-            order.OrderStatus = status;
-            context.SaveChanges();
-            return true;
-        }
-        return false;
-    }
-
-    private static string NormalizeStatus(string? status) => status switch
-    {
-        "Chờ xử lý" or "Pending" => "Pending",
-        "Đã duyệt" or "Confirmed" => "Confirmed",
-        "Đang giao" or "Đang giao hàng" or "Shipping" => "Shipping",
-        "Hoàn thành" or "Đã giao" or "Hoàn tất" or "Completed" => "Completed",
-        "Đã hủy" or "Cancelled" => "Cancelled",
-        _ => status ?? string.Empty
-    };
-
+        => _orderService.GetOrderById(id, requesterUserId, requesterIsAdmin, guestOrderId, guestPhone);
+    public bool UpdateOrderStatus(int orderId, string status) => _orderService.UpdateOrderStatus(orderId, status);
     public (bool Success, string Message) CancelOrder(int orderId, bool isClient = true, string? requesterUserId = null, string? requesterPhone = null)
-    {
-        using var context = _contextFactory.CreateDbContext();
-        var order = context.Orders.Include(o => o.OrderDetails).FirstOrDefault(o => o.Id == orderId);
-        if (order == null) return (false, "Không tìm thấy đơn hàng cần hủy!");
-
-        // Kiểm tra quyền sở hữu đơn hàng khi khách hàng hủy (Chống tấn công IDOR)
-        if (isClient)
-        {
-            if (!string.IsNullOrEmpty(requesterUserId))
-            {
-                bool isOwner = order.UserId == requesterUserId ||
-                               (string.IsNullOrEmpty(order.UserId) && !string.IsNullOrWhiteSpace(requesterPhone) && order.ReceiverPhone == requesterPhone.Trim());
-                if (!isOwner)
-                {
-                    return (false, "Bạn không có quyền thao tác trên đơn hàng này!");
-                }
-            }
-            else if (!string.IsNullOrWhiteSpace(requesterPhone))
-            {
-                if (order.ReceiverPhone != requesterPhone.Trim())
-                {
-                    return (false, "Số điện thoại tra cứu không khớp với đơn hàng!");
-                }
-                if (!string.IsNullOrEmpty(order.UserId))
-                {
-                    return (false, "Đơn hàng này thuộc tài khoản thành viên. Vui lòng đăng nhập tài khoản để hủy đơn!");
-                }
-            }
-            else
-            {
-                return (false, "Yêu cầu hủy đơn không hợp lệ!");
-            }
-        }
-
-        var currentStatus = NormalizeStatus(order.OrderStatus);
-
-        // Khách hàng chỉ được hủy trước khi Admin giao hàng (Pending hoặc Confirmed)
-        if (isClient && currentStatus != "Pending" && currentStatus != "Confirmed")
-        {
-            return (false, "Đơn hàng đang trong quá trình vận chuyển hoặc đã hoàn tất, không thể hủy!");
-        }
-
-        if (currentStatus == "Cancelled")
-        {
-            return (false, "Đơn hàng này đã được hủy trước đó!");
-        }
-
-        // Hoàn lại số lượng tồn kho cho các sản phẩm
-        foreach (var detail in order.OrderDetails)
-        {
-            var product = context.Products.Find(detail.ProductId);
-            if (product != null)
-            {
-                product.Quantity += detail.Quantity;
-            }
-        }
-
-        order.OrderStatus = "Cancelled";
-        context.SaveChanges();
-        return (true, $"Đã hủy thành công đơn hàng #ES{order.Id:D7}. Số lượng sản phẩm đã được hoàn lại kho.");
-    }
-
-    public (bool Success, string Message, int OrderId) PlaceOrder(string fullName, string phone, string email, string address, string paymentMethod, string? notes, List<CartItem> items, string? userId = null)
-    {
-        if (paymentMethod is not ("COD" or "BankTransfer" or "VNPAY" or "MOMO"))
-        {
-            return (false, "Phương thức thanh toán không hợp lệ.", 0);
-        }
-
-        // 1. Kiểm tra thông tin người nhận
-        if (string.IsNullOrWhiteSpace(fullName) || string.IsNullOrWhiteSpace(phone) || string.IsNullOrWhiteSpace(address) || address.Trim() == "Chưa cập nhật địa chỉ")
-        {
-            return (false, "Vui lòng nhập đầy đủ Họ tên, Số điện thoại và Địa chỉ giao hàng hợp lệ!", 0);
-        }
-
-        // 2. Kiểm tra giỏ hàng
-        if (items == null || !items.Any())
-        {
-            return (false, "Giỏ hàng rỗng!", 0);
-        }
-
-        using var context = _contextFactory.CreateDbContext();
-        using var transaction = context.Database.BeginTransaction(IsolationLevel.Serializable);
-
-        // 3. Kiểm tra tính khả dụng của sản phẩm VÀ danh mục cha (chặn đặt hàng nếu danh mục đã bị ẩn)
-        foreach (var item in items)
-        {
-            var prod = context.Products.Include(p => p.Category).FirstOrDefault(p => p.Id == item.ProductId);
-            if (prod == null || !prod.IsActive || (prod.Category != null && !prod.Category.IsActive))
-            {
-                return (false, $"Sản phẩm '{item.ProductName}' hoặc danh mục của sản phẩm hiện đã ngừng kinh doanh!", 0);
-            }
-            if (prod.Quantity < item.Quantity)
-            {
-                return (false, $"Sản phẩm '{prod.Name}' chỉ còn {prod.Quantity} chiếc trong kho (bạn đặt {item.Quantity} chiếc)!", 0);
-            }
-
-            item.ProductName = prod.Name;
-            item.UnitPrice = prod.Price;
-        }
-
-        // 4. Nếu người dùng đã đăng nhập, đồng bộ bổ sung FullName, PhoneNumber, Address nếu còn thiếu
-        if (!string.IsNullOrEmpty(userId))
-        {
-            var dbUser = context.Users.Find(userId);
-            if (dbUser != null)
-            {
-                if (string.IsNullOrWhiteSpace(dbUser.FullName))
-                {
-                    dbUser.FullName = fullName.Trim();
-                }
-                if (string.IsNullOrWhiteSpace(dbUser.PhoneNumber))
-                {
-                    dbUser.PhoneNumber = phone.Trim();
-                }
-                if (string.IsNullOrWhiteSpace(dbUser.Address) || dbUser.Address == "Chưa cập nhật địa chỉ")
-                {
-                    dbUser.Address = address.Trim();
-                }
-            }
-        }
-
-        // Tạo đơn hàng mới liên kết trực tiếp với UserId và thông tin người nhận
-        var order = new Order
-        {
-            UserId = userId,
-            ReceiverName = fullName.Trim(),
-            ReceiverPhone = phone.Trim(),
-            OrderDate = DateTime.Now,
-            TotalAmount = items.Sum(i => i.TotalPrice),
-            OrderStatus = "Pending",
-            ShippingAddress = address.Trim(),
-            PaymentMethod = paymentMethod ?? "COD",
-            Notes = notes
-        };
-        context.Orders.Add(order);
-        context.SaveChanges();
-
-        // 5. Thêm chi tiết đơn hàng và trừ kho an toàn
-        foreach (var item in items)
-        {
-            var detail = new OrderDetail
-            {
-                OrderId = order.Id,
-                ProductId = item.ProductId,
-                Quantity = item.Quantity,
-                UnitPrice = item.UnitPrice,
-                TotalPrice = item.TotalPrice
-            };
-            context.OrderDetails.Add(detail);
-
-            var product = context.Products.Find(item.ProductId);
-            if (product != null)
-            {
-                product.Quantity = Math.Max(0, product.Quantity - item.Quantity);
-            }
-        }
-        context.SaveChanges();
-        transaction.Commit();
-
-        return (true, "Đặt hàng thành công!", order.Id);
-    }
+        => _orderService.CancelOrder(orderId, isClient, requesterUserId, requesterPhone);
+    public (bool Success, string Message, int OrderId) PlaceOrder(
+        string fullName, string phone, string email, string address, string paymentMethod, string? notes, List<CartItem> items, string? userId = null)
+        => _orderService.PlaceOrder(fullName, phone, email, address, paymentMethod, notes, items, userId);
     #endregion
 
-    #region 5. QUẢN LÝ TÀI KHOẢN
+    #region 5. QUẢN LÝ TÀI KHOẢN (ACCOUNTS)
     public List<ApplicationUser> GetUsers()
     {
         using var context = _contextFactory.CreateDbContext();

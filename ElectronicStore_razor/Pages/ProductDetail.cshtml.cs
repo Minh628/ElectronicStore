@@ -1,7 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
-using ElectronicStore_razor.Data;
 using ElectronicStore_razor.Models.Entities;
 using ElectronicStore_razor.Services;
 
@@ -9,12 +7,12 @@ namespace ElectronicStore_razor.Pages;
 
 public class ProductDetailModel : PageModel
 {
-    private readonly ElectronicStoreDbContext _context;
+    private readonly IProductService _productService;
     private readonly CartService _cartService;
 
-    public ProductDetailModel(ElectronicStoreDbContext context, CartService cartService)
+    public ProductDetailModel(IProductService productService, CartService cartService)
     {
-        _context = context;
+        _productService = productService;
         _cartService = cartService;
     }
 
@@ -26,26 +24,11 @@ public class ProductDetailModel : PageModel
 
     public async Task<IActionResult> OnGetAsync(int? id)
     {
-        if (id.HasValue && id.Value > 0)
-        {
-            Product = await _context.Products
-                .Include(p => p.Category)
-                .FirstOrDefaultAsync(p => p.Id == id.Value && p.IsActive && p.Category.IsActive);
-        }
-        else
-        {
-            Product = await _context.Products
-                .Include(p => p.Category)
-                .FirstOrDefaultAsync(p => p.IsActive && p.Category.IsActive);
-        }
+        Product = await _productService.GetProductDetailAsync(id);
 
         if (Product != null)
         {
-            // Tải các sản phẩm liên quan cùng danh mục đang hoạt động
-            RelatedProducts = await _context.Products
-                .Where(p => p.CategoryId == Product.CategoryId && p.Id != Product.Id && p.IsActive && p.Category.IsActive)
-                .Take(4)
-                .ToListAsync();
+            RelatedProducts = await _productService.GetRelatedProductsAsync(Product.CategoryId, Product.Id, count: 4);
         }
 
         return Page();
@@ -53,7 +36,7 @@ public class ProductDetailModel : PageModel
 
     public async Task<IActionResult> OnPostAddToCartAsync(int id, int quantity = 1)
     {
-        var product = await _context.Products.Include(p => p.Category).FirstOrDefaultAsync(p => p.Id == id);
+        var product = await _productService.GetProductForCartAsync(id);
         if (product == null || !product.IsActive || (product.Category != null && !product.Category.IsActive))
         {
             return RedirectToPage("/Index");
@@ -68,7 +51,7 @@ public class ProductDetailModel : PageModel
     /// </summary>
     public async Task<IActionResult> OnPostAddToCartAjaxAsync(int productId, int quantity = 1)
     {
-        var product = await _context.Products.Include(p => p.Category).FirstOrDefaultAsync(p => p.Id == productId);
+        var product = await _productService.GetProductForCartAsync(productId);
         if (product == null || !product.IsActive || (product.Category != null && !product.Category.IsActive))
         {
             return new JsonResult(new { success = false, message = "Sản phẩm không tồn tại hoặc đã ngừng kinh doanh!" });

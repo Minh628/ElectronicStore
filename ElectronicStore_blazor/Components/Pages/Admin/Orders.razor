@@ -1,6 +1,6 @@
 @page "/admin/orders"
 @layout AdminLayout
-@inject IOrderService OrderService
+@inject ElectronicStore_blazor.Services.Admin.IAdminOrderService AdminOrderService
 @inject IJSRuntime JS
 
 <PageTitle>Admin - Duyệt Đơn Hàng - ElectroStore</PageTitle>
@@ -370,13 +370,22 @@
 }
 
 @code {
+    private string NormalizeStatus(string? status) => AdminOrderService.NormalizeStatus(status);
+
     private List<Order> orders = new();
     private List<Order> filteredOrders = new();
+    private Order? selectedOrder;
     private string statusFilter = "";
     private string searchKeyword = "";
     private string? alertMessage;
     private string? alertType;
-    private Order? selectedOrder;
+
+    // KPI stats
+    private int totalOrdersCount = 0;
+    private int pendingCount = 0;
+    private int shippingCount = 0;
+    private int completedCount = 0;
+    private decimal totalRevenue = 0;
 
     protected override void OnInitialized()
     {
@@ -385,54 +394,25 @@
 
     private void LoadOrders()
     {
-        orders = OrderService.GetOrders();
-        ApplyFilter();
-    }
-
-    private string NormalizeStatus(string? status)
-    {
-        if (string.IsNullOrEmpty(status)) return "Pending";
-        return status switch
-        {
-            "Chờ xử lý" or "Pending" => "Pending",
-            "Đã duyệt" or "Confirmed" => "Confirmed",
-            "Đang giao hàng" or "Đang giao" or "Shipping" => "Shipping",
-            "Hoàn thành" or "Completed" => "Completed",
-            "Đã hủy" or "Cancelled" => "Cancelled",
-            _ => status
-        };
+        var result = AdminOrderService.GetAdminOrders(statusFilter, searchKeyword);
+        orders = result.Orders;
+        filteredOrders = result.Orders;
+        totalOrdersCount = result.TotalOrdersCount;
+        pendingCount = result.PendingCount;
+        shippingCount = result.ShippingCount;
+        completedCount = result.CompletedCount;
+        totalRevenue = result.TotalRevenue;
     }
 
     private void SetStatusFilter(string status)
     {
         statusFilter = status;
-        ApplyFilter();
+        LoadOrders();
     }
 
     private void ApplyFilter()
     {
-        var query = orders.AsEnumerable();
-
-        if (!string.IsNullOrEmpty(statusFilter))
-        {
-            query = query.Where(o => NormalizeStatus(o.OrderStatus) == statusFilter);
-        }
-
-        if (!string.IsNullOrWhiteSpace(searchKeyword))
-        {
-            var kw = searchKeyword.Trim().ToLower();
-            var cleanKw = kw.Replace("#", "").Replace("es", "").TrimStart('0');
-            int.TryParse(cleanKw, out int searchOrderId);
-
-            query = query.Where(o => (searchOrderId > 0 && o.Id == searchOrderId) ||
-                                     (o.ReceiverName != null && o.ReceiverName.ToLower().Contains(kw)) ||
-                                     (o.ReceiverPhone != null && o.ReceiverPhone.Contains(kw)) ||
-                                     (o.ShippingAddress != null && o.ShippingAddress.ToLower().Contains(kw)) ||
-                                     (o.User != null && o.User.FullName != null && o.User.FullName.ToLower().Contains(kw)) ||
-                                     (o.User != null && o.User.PhoneNumber != null && o.User.PhoneNumber.Contains(kw)));
-        }
-
-        filteredOrders = query.ToList();
+        LoadOrders();
     }
 
     private string FormatPaymentMethod(string? method) => method switch
@@ -451,17 +431,9 @@
 
     private void ChangeStatus(int orderId, string newStatus)
     {
-        OrderService.UpdateOrderStatus(orderId, newStatus);
-        var statusText = newStatus switch
-        {
-            "Confirmed" => "Đã duyệt",
-            "Shipping" => "Đang giao hàng",
-            "Completed" => "Hoàn thành",
-            "Cancelled" => "Đã hủy",
-            _ => newStatus
-        };
-        alertMessage = $"Đã cập nhật trạng thái đơn hàng #ES{orderId:D7} sang '{statusText}'!";
-        alertType = "success";
+        var result = AdminOrderService.UpdateOrderStatus(orderId, newStatus);
+        alertMessage = result.Message;
+        alertType = result.Success ? "success" : "danger";
         LoadOrders();
     }
 

@@ -1,11 +1,9 @@
 @page "/my-orders"
 @page "/MyOrders"
-@inject IProductService ProductService
+@inject IOrderService OrderService
 @inject UserService UserService
-@inject Microsoft.EntityFrameworkCore.IDbContextFactory<ElectronicStore_blazor.Data.ElectronicStoreDbContext> DbFactory
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
-@using Microsoft.EntityFrameworkCore
 
 <PageTitle>Đơn Hàng Của Tôi - ElectroStore</PageTitle>
 
@@ -306,7 +304,7 @@
 
         string? currentUserId = (UserService.IsAuthenticated && UserService.CurrentUser != null) ? UserService.CurrentUser.Id : null;
         string? effectivePhone = !string.IsNullOrWhiteSpace(searchPhone) ? searchPhone : UserService.CurrentUser?.PhoneNumber;
-        var result = ProductService.CancelOrder(orderId, isClient: true, requesterUserId: currentUserId, requesterPhone: effectivePhone);
+        var result = OrderService.CancelOrder(orderId, isClient: true, requesterUserId: currentUserId, requesterPhone: effectivePhone);
         if (result.Success)
         {
             successMessage = result.Message;
@@ -338,18 +336,9 @@
 
     private void LoadUserOrders()
     {
-        using var context = DbFactory.CreateDbContext();
         var userId = UserService.CurrentUser?.Id;
-        var userPhone = UserService.CurrentUser?.PhoneNumber?.Trim();
-        // Hiển thị cả đơn hàng đặt bằng tài khoản lẫn đơn đặt lúc chưa đăng nhập nhưng trùng SĐT tài khoản
-        orders = context.Orders
-            .Include(o => o.User)
-            .Include(o => o.OrderDetails)
-                .ThenInclude(od => od.Product)
-            .Where(o => (userId != null && o.UserId == userId) ||
-                        (string.IsNullOrEmpty(o.UserId) && !string.IsNullOrEmpty(userPhone) && o.ReceiverPhone == userPhone))
-            .OrderByDescending(o => o.OrderDate)
-            .ToList();
+        var userPhone = UserService.CurrentUser?.PhoneNumber;
+        orders = OrderService.GetCustomerOrders(userId, userPhone, null);
     }
 
     private static string FormatPaymentMethod(string? method) => method switch
@@ -364,18 +353,9 @@
     private void LoadOrdersByPhone()
     {
         if (string.IsNullOrWhiteSpace(searchPhone)) return;
-
-        using var context = DbFactory.CreateDbContext();
-        var currentUserId = (UserService.IsAuthenticated && UserService.CurrentUser != null) ? UserService.CurrentUser.Id : null;
-        var phoneTrim = searchPhone.Trim();
-        // Bảo mật quyền riêng tư: chỉ hiển thị đơn vãng lai hoặc đơn thuộc chính tài khoản đang đăng nhập
-        orders = context.Orders
-            .Include(o => o.User)
-            .Include(o => o.OrderDetails)
-                .ThenInclude(od => od.Product)
-            .Where(o => o.ReceiverPhone == phoneTrim && (string.IsNullOrEmpty(o.UserId) || (currentUserId != null && o.UserId == currentUserId)))
-            .OrderByDescending(o => o.OrderDate)
-            .ToList();
+        var userId = UserService.CurrentUser?.Id;
+        var userPhone = UserService.CurrentUser?.PhoneNumber;
+        orders = OrderService.GetCustomerOrders(userId, userPhone, searchPhone);
         activeTab = "All";
     }
 

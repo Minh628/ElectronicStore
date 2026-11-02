@@ -12,15 +12,18 @@ namespace ElectronicStore_mvc.Controllers;
 public class AccountController : Controller
 {
     private readonly IAccountService _accountService;
+    private readonly ElectronicStore_mvc.Areas.Admin.Services.IAdminAccountService _adminAccountService;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
 
     public AccountController(
         IAccountService accountService,
+        ElectronicStore_mvc.Areas.Admin.Services.IAdminAccountService adminAccountService,
         UserManager<ApplicationUser> userManager,
         SignInManager<ApplicationUser> signInManager)
     {
         _accountService = accountService;
+        _adminAccountService = adminAccountService;
         _userManager = userManager;
         _signInManager = signInManager;
     }
@@ -57,7 +60,7 @@ public class AccountController : Controller
     {
         ViewBag.ReturnUrl = returnUrl;
 
-        var validation = await _accountService.ValidateAdminLoginAsync(username, password);
+        var validation = await _adminAccountService.ValidateAdminLoginAsync(username, password);
         if (!validation.Success || validation.User == null)
         {
             ViewBag.ErrorMessage = validation.Message;

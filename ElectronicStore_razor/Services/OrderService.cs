@@ -1,5 +1,4 @@
 using System.Data;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using ElectronicStore_razor.Data;
 using ElectronicStore_razor.Models;
@@ -8,30 +7,29 @@ using ElectronicStore_razor.Models.Entities;
 namespace ElectronicStore_razor.Services;
 
 /// <summary>
-/// Triển khai nghiệp vụ giao dịch và đơn hàng trong Razor Pages
+/// Service quản lý đơn hàng dành riêng cho End-User (Khách mua hàng)
 /// </summary>
 public class OrderService : IOrderService
 {
     private readonly ElectronicStoreDbContext _context;
-    private readonly UserManager<ApplicationUser> _userManager;
 
-    public OrderService(ElectronicStoreDbContext context, UserManager<ApplicationUser> userManager)
+    public OrderService(ElectronicStoreDbContext context)
     {
         _context = context;
-        _userManager = userManager;
     }
 
     public static string NormalizeStatusStatic(string? status)
     {
         if (string.IsNullOrEmpty(status)) return "Pending";
-        return status switch
+        var s = status.Trim().ToLowerInvariant();
+        return s switch
         {
-            "Chờ xử lý" or "Pending" => "Pending",
-            "Đã duyệt" or "Confirmed" => "Confirmed",
-            "Đang giao" or "Đang giao hàng" or "Shipping" => "Shipping",
-            "Hoàn thành" or "Completed" or "Đã giao" or "Hoàn tất" => "Completed",
-            "Đã hủy" or "Cancelled" => "Cancelled",
-            _ => status
+            "pending" or "chờ xử lý" or "chờ xác nhận" or "cho xu ly" => "Pending",
+            "confirmed" or "đã duyệt" or "da duyet" => "Confirmed",
+            "shipping" or "đang giao" or "đang giao hàng" or "dang giao" => "Shipping",
+            "completed" or "delivered" or "hoàn thành" or "đã giao" or "hoàn tất" or "da giao" => "Completed",
+            "cancelled" or "canceled" or "đã hủy" or "da huy" or "hủy" => "Cancelled",
+            _ => status.Trim()
         };
     }
 
@@ -57,121 +55,74 @@ public class OrderService : IOrderService
             return (false, "Vui lòng nhập đầy đủ Họ tên, Số điện thoại và Địa chỉ giao hàng!", 0);
         }
 
-        await using var transaction = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
-        try
+        var productIds = cart.Select(c => c.ProductId).ToList();
+        var dbProducts = await _context.Products
+            .Include(p => p.Category)
+            .Where(p => productIds.Contains(p.Id))
+            .ToListAsync();
+
+        foreach (var item in cart)
         {
-            foreach (var item in cart)
+            var prod = dbProducts.FirstOrDefault(p => p.Id == item.ProductId);
+            if (prod == null || !prod.IsActive || (prod.Category != null && !prod.Category.IsActive))
             {
-                var prod = await _context.Products.Include(p => p.Category).FirstOrDefaultAsync(p => p.Id == item.ProductId);
-                if (prod == null || !prod.IsActive || (prod.Category != null && !prod.Category.IsActive))
-                {
-                    await transaction.RollbackAsync();
-                    return (false, $"Sản phẩm '{item.ProductName}' hiện không còn kinh doanh!", 0);
-                }
-
-                if (prod.Quantity < item.Quantity)
-                {
-                    await transaction.RollbackAsync();
-                    return (false, $"Sản phẩm '{prod.Name}' chỉ còn {prod.Quantity} chiếc trong kho (bạn đặt {item.Quantity} chiếc)!", 0);
-                }
-
-                item.ProductName = prod.Name;
-                item.UnitPrice = prod.Price;
+                return (false, $"Sản phẩm '{item.ProductName}' hiện không còn kinh doanh!", 0);
             }
 
-            if (!string.IsNullOrEmpty(currentUserId))
+            if (prod.Quantity < item.Quantity)
             {
-                var user = await _userManager.FindByIdAsync(currentUserId);
-                if (user != null)
-                {
-                    bool userUpdated = false;
-                    if (string.IsNullOrEmpty(user.FullName))
-                    {
-                        user.FullName = fullName.Trim();
-                        userUpdated = true;
-                    }
-                    if (string.IsNullOrEmpty(user.PhoneNumber))
-                    {
-                        user.PhoneNumber = phoneNumber.Trim();
-                        userUpdated = true;
-                    }
-                    if (string.IsNullOrEmpty(user.Address) || user.Address == "Chưa cập nhật địa chỉ")
-                    {
-                        user.Address = shippingAddress.Trim();
-                        userUpdated = true;
-                    }
-                    if (userUpdated)
-                    {
-                        await _userManager.UpdateAsync(user);
-                    }
-                }
+                return (false, $"Sản phẩm '{prod.Name}' chỉ còn {prod.Quantity} chiếc trong kho (bạn đặt {item.Quantity} chiếc)!", 0);
             }
-
-            var order = new Order
-            {
-                UserId = currentUserId,
-                OrderDate = DateTime.Now,
-                TotalAmount = cart.Sum(item => item.TotalPrice),
-                OrderStatus = "Pending",
-                PaymentMethod = paymentMethod ?? "COD",
-                ReceiverName = fullName.Trim(),
-                ReceiverPhone = phoneNumber.Trim(),
-                ShippingAddress = shippingAddress.Trim(),
-                Notes = notes?.Trim()
-            };
-            _context.Orders.Add(order);
-            await _context.SaveChangesAsync();
-
-            foreach (var item in cart)
-            {
-                var orderDetail = new OrderDetail
-                {
-                    OrderId = order.Id,
-                    ProductId = item.ProductId,
-                    Quantity = item.Quantity,
-                    UnitPrice = item.UnitPrice,
-                    TotalPrice = item.TotalPrice
-                };
-                _context.OrderDetails.Add(orderDetail);
-
-                var product = await _context.Products.FindAsync(item.ProductId);
-                if (product != null)
-                {
-                    product.Quantity = Math.Max(0, product.Quantity - item.Quantity);
-                }
-            }
-
-            await _context.SaveChangesAsync();
-            await transaction.CommitAsync();
-
-            return (true, "Đặt hàng thành công!", order.Id);
         }
-        catch (Exception ex)
+
+        var order = new Order
         {
-            await transaction.RollbackAsync();
-            return (false, $"Lỗi xử lý đặt hàng: {ex.Message}", 0);
+            UserId = currentUserId,
+            OrderDate = DateTime.Now,
+            TotalAmount = cart.Sum(item => item.TotalPrice),
+            OrderStatus = "Pending",
+            PaymentMethod = paymentMethod ?? "COD",
+            ReceiverName = fullName.Trim(),
+            ReceiverPhone = phoneNumber.Trim(),
+            ShippingAddress = shippingAddress.Trim(),
+            Notes = notes?.Trim(),
+            OrderDetails = new List<OrderDetail>()
+        };
+
+        foreach (var item in cart)
+        {
+            var prod = dbProducts.First(p => p.Id == item.ProductId);
+            prod.Quantity -= item.Quantity;
+
+            order.OrderDetails.Add(new OrderDetail
+            {
+                ProductId = prod.Id,
+                Quantity = item.Quantity,
+                UnitPrice = prod.Price,
+                TotalPrice = prod.Price * item.Quantity
+            });
         }
+
+        _context.Orders.Add(order);
+        await _context.SaveChangesAsync();
+
+        return (true, "Đặt hàng thành công!", order.Id);
     }
 
     public async Task<List<Order>> GetCustomerOrdersAsync(string? userId, string? userPhone, string? lookupPhone)
     {
         var query = _context.Orders
-            .Include(o => o.User)
             .Include(o => o.OrderDetails)
                 .ThenInclude(od => od.Product)
             .AsQueryable();
 
-        if (!string.IsNullOrWhiteSpace(lookupPhone))
+        if (!string.IsNullOrEmpty(userId))
         {
-            var phoneTrim = lookupPhone.Trim();
-            query = query.Where(o => o.ReceiverPhone == phoneTrim &&
-                                     (string.IsNullOrEmpty(o.UserId) || (userId != null && o.UserId == userId)));
+            query = query.Where(o => o.UserId == userId || (!string.IsNullOrEmpty(userPhone) && o.ReceiverPhone == userPhone));
         }
-        else if (!string.IsNullOrEmpty(userId))
+        else if (!string.IsNullOrEmpty(lookupPhone))
         {
-            var phoneTrim = userPhone?.Trim();
-            query = query.Where(o => o.UserId == userId ||
-                                     (string.IsNullOrEmpty(o.UserId) && !string.IsNullOrEmpty(phoneTrim) && o.ReceiverPhone == phoneTrim));
+            query = query.Where(o => o.ReceiverPhone == lookupPhone.Trim());
         }
         else
         {
@@ -185,20 +136,30 @@ public class OrderService : IOrderService
         int orderId, string? userId, string? userPhone, bool isAdmin, int? lastGuestOrderId, string? lookupPhone)
     {
         var order = await _context.Orders
-            .Include(o => o.User)
             .Include(o => o.OrderDetails)
                 .ThenInclude(od => od.Product)
             .FirstOrDefaultAsync(o => o.Id == orderId);
 
         if (order == null) return null;
+
         if (isAdmin) return order;
 
-        var effectivePhone = !string.IsNullOrWhiteSpace(lookupPhone) ? lookupPhone.Trim() : userPhone?.Trim();
-        bool ownsOrder = (!string.IsNullOrEmpty(userId) && order.UserId == userId) ||
-                         (lastGuestOrderId.HasValue && lastGuestOrderId.Value == orderId) ||
-                         (string.IsNullOrEmpty(order.UserId) && !string.IsNullOrWhiteSpace(effectivePhone) && order.ReceiverPhone == effectivePhone);
+        if (!string.IsNullOrEmpty(userId) && (order.UserId == userId || (!string.IsNullOrEmpty(userPhone) && order.ReceiverPhone == userPhone)))
+        {
+            return order;
+        }
 
-        return ownsOrder ? order : null;
+        if (!string.IsNullOrEmpty(lookupPhone) && order.ReceiverPhone == lookupPhone.Trim())
+        {
+            return order;
+        }
+
+        if (lastGuestOrderId.HasValue && lastGuestOrderId.Value == orderId)
+        {
+            return order;
+        }
+
+        return null;
     }
 
     public async Task<(bool Success, string Message)> CancelCustomerOrderAsync(
@@ -213,34 +174,15 @@ public class OrderService : IOrderService
             return (false, "Không tìm thấy đơn hàng cần hủy.");
         }
 
-        if (!string.IsNullOrEmpty(userId))
-        {
-            var effectivePhone = !string.IsNullOrWhiteSpace(lookupPhone) ? lookupPhone.Trim() : userPhone?.Trim();
-            bool isOwner = order.UserId == userId ||
-                           (string.IsNullOrEmpty(order.UserId) && !string.IsNullOrWhiteSpace(effectivePhone) && order.ReceiverPhone == effectivePhone);
-            if (!isOwner)
-            {
-                return (false, "Bạn không có quyền thao tác trên đơn hàng này!");
-            }
-        }
-        else if (!string.IsNullOrWhiteSpace(lookupPhone))
-        {
-            if (order.ReceiverPhone != lookupPhone.Trim())
-            {
-                return (false, "Số điện thoại tra cứu không khớp với đơn hàng!");
-            }
+        bool isOwner = (!string.IsNullOrEmpty(userId) && (order.UserId == userId || (!string.IsNullOrEmpty(userPhone) && order.ReceiverPhone == userPhone))) ||
+                       (!string.IsNullOrEmpty(lookupPhone) && order.ReceiverPhone == lookupPhone.Trim());
 
-            if (!string.IsNullOrEmpty(order.UserId))
-            {
-                return (false, "Đơn hàng này thuộc tài khoản thành viên. Vui lòng đăng nhập tài khoản để hủy đơn!");
-            }
-        }
-        else
+        if (!isOwner)
         {
-            return (false, "Yêu cầu không hợp lệ!");
+            return (false, "Bạn không có quyền thao tác trên đơn hàng này.");
         }
 
-        var currentStatus = NormalizeStatus(order.OrderStatus);
+        var currentStatus = NormalizeStatusStatic(order.OrderStatus);
         if (currentStatus != "Pending" && currentStatus != "Confirmed")
         {
             return (false, "Đơn hàng đang giao hoặc đã hoàn tất/đã hủy, không thể hủy.");
@@ -260,102 +202,4 @@ public class OrderService : IOrderService
 
         return (true, $"Đã hủy thành công đơn hàng #ES{order.Id:D7}. Số lượng sản phẩm đã được tự động hoàn lại vào kho.");
     }
-
-    public async Task<OrderAdminResult> GetAdminOrdersAsync(string? status, string? search)
-    {
-        var allOrders = await _context.Orders.ToListAsync();
-
-        int totalOrdersCount = allOrders.Count;
-        int pendingCount = allOrders.Count(o => NormalizeStatus(o.OrderStatus) == "Pending");
-        int shippingCount = allOrders.Count(o => NormalizeStatus(o.OrderStatus) == "Shipping");
-        int completedCount = allOrders.Count(o => NormalizeStatus(o.OrderStatus) == "Completed");
-        decimal totalRevenue = allOrders
-            .Where(o => NormalizeStatus(o.OrderStatus) == "Completed")
-            .Sum(o => o.TotalAmount);
-
-        var query = _context.Orders
-            .Include(o => o.User)
-            .Include(o => o.OrderDetails)
-                .ThenInclude(od => od.Product)
-            .AsQueryable();
-
-        var normalizedStatus = NormalizeStatus(status);
-        if (!string.IsNullOrWhiteSpace(normalizedStatus) && normalizedStatus != "All")
-        {
-            query = query.Where(o => o.OrderStatus == normalizedStatus ||
-                                     (normalizedStatus == "Pending" && o.OrderStatus == "Chờ xử lý") ||
-                                     (normalizedStatus == "Confirmed" && o.OrderStatus == "Đã duyệt") ||
-                                     (normalizedStatus == "Shipping" && (o.OrderStatus == "Đang giao" || o.OrderStatus == "Đang giao hàng")) ||
-                                     (normalizedStatus == "Completed" && (o.OrderStatus == "Hoàn thành" || o.OrderStatus == "Đã giao" || o.OrderStatus == "Hoàn tất")) ||
-                                     (normalizedStatus == "Cancelled" && o.OrderStatus == "Đã hủy"));
-        }
-
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            var kw = search.Trim().ToLower();
-            query = query.Where(o => o.Id.ToString().Contains(kw) ||
-                                     o.ReceiverName.ToLower().Contains(kw) ||
-                                     o.ReceiverPhone.Contains(kw));
-        }
-
-        var orders = await query.OrderByDescending(o => o.OrderDate).ToListAsync();
-
-        return new OrderAdminResult
-        {
-            Orders = orders,
-            TotalOrdersCount = totalOrdersCount,
-            PendingCount = pendingCount,
-            ShippingCount = shippingCount,
-            CompletedCount = completedCount,
-            TotalRevenue = totalRevenue
-        };
-    }
-
-    public async Task<(bool Success, string Message)> UpdateOrderStatusAsync(int orderId, string newStatus)
-    {
-        var order = await _context.Orders
-            .Include(o => o.OrderDetails)
-            .FirstOrDefaultAsync(o => o.Id == orderId);
-
-        if (order == null)
-        {
-            return (false, "Không tìm thấy đơn hàng!");
-        }
-
-        var oldNormalized = NormalizeStatus(order.OrderStatus);
-        var newNormalized = NormalizeStatus(newStatus);
-
-        if (oldNormalized != "Cancelled" && newNormalized == "Cancelled")
-        {
-            foreach (var detail in order.OrderDetails)
-            {
-                var prod = await _context.Products.FindAsync(detail.ProductId);
-                if (prod != null)
-                {
-                    prod.Quantity += detail.Quantity;
-                }
-            }
-        }
-        else if (oldNormalized == "Cancelled" && newNormalized != "Cancelled")
-        {
-            foreach (var detail in order.OrderDetails)
-            {
-                var prod = await _context.Products.FindAsync(detail.ProductId);
-                if (prod != null)
-                {
-                    if (prod.Quantity < detail.Quantity)
-                    {
-                        return (false, $"Không thể khôi phục đơn hàng! Sản phẩm '{prod.Name}' chỉ còn {prod.Quantity} chiếc trong kho (đơn hàng cần {detail.Quantity} chiếc).");
-                    }
-                    prod.Quantity -= detail.Quantity;
-                }
-            }
-        }
-
-        order.OrderStatus = newNormalized;
-        await _context.SaveChangesAsync();
-
-        return (true, $"Đã cập nhật trạng thái đơn hàng #{order.Id} thành: {newNormalized}");
-    }
 }
-

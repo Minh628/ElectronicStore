@@ -1,6 +1,6 @@
 @page "/ordersuccess"
 @page "/order-success"
-@inject IProductService ProductService
+@inject IOrderService OrderService
 @inject UserService UserService
 @inject CartService Cart
 @inject NavigationManager Navigation
@@ -263,7 +263,7 @@
         if (targetId.HasValue && targetId.Value > 0)
         {
             var effectivePhone = !string.IsNullOrWhiteSpace(Phone) ? Phone : UserService.CurrentUser?.PhoneNumber;
-            order = ProductService.GetOrderById(
+            order = OrderService.GetOrderById(
                 targetId.Value,
                 UserService.CurrentUser?.Id,
                 UserService.IsAdmin,

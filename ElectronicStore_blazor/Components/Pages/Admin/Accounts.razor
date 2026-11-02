@@ -1,12 +1,8 @@
 @page "/admin/accounts"
 @layout AdminLayout
-@inject IProductService ProductService
+@inject ElectronicStore_blazor.Services.Admin.IAdminAccountService AdminAccountService
 @inject UserService UserService
-@inject UserManager<ApplicationUser> UserManager
-@inject RoleManager<IdentityRole> RoleManager
-@inject IDbContextFactory<ElectronicStore_blazor.Data.ElectronicStoreDbContext> DbFactory
 @inject IJSRuntime JS
-@using Microsoft.EntityFrameworkCore
 
 <PageTitle>Admin - Quản Lý Tài Khoản - ElectroStore</PageTitle>
 
@@ -441,17 +437,8 @@
 
     private async Task LoadUsers()
     {
-        // Thực thi trong khóa SemaphoreSlim của UserService để tránh xung đột với AdminLayout.RestoreSessionAsync
-        await UserService.ExecuteWithLockAsync(async userManager =>
-        {
-            users = await userManager.Users.OrderByDescending(u => u.CreatedAt).ToListAsync();
-            userRoles.Clear();
-            foreach (var u in users)
-            {
-                var roles = await userManager.GetRolesAsync(u);
-                userRoles[u.Id] = roles.FirstOrDefault() ?? "Customer";
-            }
-        });
+        users = await AdminAccountService.GetUsersAsync();
+        userRoles = await AdminAccountService.GetUserRolesAsync(users);
     }
 
     private void OpenCreateModal()
@@ -482,53 +469,15 @@
             return;
         }
 
-        bool created = await UserService.ExecuteWithLockAsync(async userManager =>
+        var result = await AdminAccountService.CreateAccountAsync(
+            newUsername, newFullName, newEmail, newPhone, newAddress, newPassword, newRole);
+
+        alertMessage = result.Message;
+        alertType = result.Success ? "success" : "danger";
+
+        if (result.Success)
         {
-            var existing = await userManager.FindByNameAsync(newUsername.Trim());
-            if (existing != null)
-            {
-                alertMessage = $"Tên đăng nhập '{newUsername}' đã tồn tại!";
-                alertType = "danger";
-                return false;
-            }
-
-            var user = new ApplicationUser
-            {
-                UserName = newUsername.Trim(),
-                FullName = string.IsNullOrWhiteSpace(newFullName) ? newUsername.Trim() : newFullName.Trim(),
-                Email = string.IsNullOrWhiteSpace(newEmail) ? $"{newUsername.Trim()}@electrostore.vn" : newEmail.Trim(),
-                PhoneNumber = newPhone.Trim(),
-                Address = newAddress.Trim(),
-                IsActive = true,
-                CreatedAt = DateTime.UtcNow
-            };
-
-            var result = await userManager.CreateAsync(user, newPassword.Trim());
-            if (!result.Succeeded)
-            {
-                alertMessage = "Lỗi khi tạo tài khoản: " + string.Join("; ", result.Errors.Select(e => e.Description));
-                alertType = "danger";
-                return false;
-            }
-
-            var roleResult = await userManager.AddToRoleAsync(user, newRole);
-            if (!roleResult.Succeeded)
-            {
-                await userManager.DeleteAsync(user);
-                alertMessage = "Không thể gán vai trò cho tài khoản: " +
-                               string.Join("; ", roleResult.Errors.Select(e => e.Description));
-                alertType = "danger";
-                return false;
-            }
-
-            alertMessage = $"Đã tạo thành công tài khoản '{user.UserName}' với vai trò '{newRole}'!";
-            alertType = "success";
             showCreateModal = false;
-            return true;
-        });
-
-        if (created)
-        {
             await LoadUsers();
         }
     }
@@ -548,57 +497,24 @@
     {
         if (editingUser == null) return;
 
-        if (editRole is not ("Customer" or "Admin"))
+        var currentAdminUsername = UserService.CurrentUser?.UserName ?? "";
+        var result = await AdminAccountService.UpdateAccountAsync(
+            currentAdminUsername, editingUser, editFullName, editEmail, editPhone, editAddress, editRole);
+
+        alertMessage = result.Message;
+        alertType = result.Success ? "success" : (result.Message.Contains("hạ quyền") ? "warning" : "danger");
+
+        if (result.Success)
         {
-            alertMessage = "Vai trò tài khoản không hợp lệ.";
-            alertType = "danger";
-            return;
+            showEditModal = false;
+            await LoadUsers();
         }
-
-        // Chặn Admin tự tước quyền quản trị của chính mình
-        if (editingUser.UserName == UserService.CurrentUser?.UserName && editRole != "Admin")
-        {
-            alertMessage = "Bạn không thể tự hạ quyền Quản trị viên của chính mình!";
-            alertType = "warning";
-            return;
-        }
-
-        bool updated = await UserService.ExecuteWithLockAsync(async userManager =>
-        {
-            editingUser.FullName = editFullName.Trim();
-            editingUser.Email = string.IsNullOrWhiteSpace(editEmail) ? $"{editingUser.UserName}@electrostore.vn" : editEmail.Trim();
-            editingUser.PhoneNumber = editPhone.Trim();
-            editingUser.Address = editAddress.Trim();
-
-            await userManager.UpdateAsync(editingUser);
-
-            var currentRoles = await userManager.GetRolesAsync(editingUser);
-            if (!currentRoles.Contains(editRole))
-            {
-                await userManager.RemoveFromRolesAsync(editingUser, currentRoles);
-                var roleResult = await userManager.AddToRoleAsync(editingUser, editRole);
-                if (!roleResult.Succeeded)
-                {
-                    alertMessage = "Không thể cập nhật vai trò: " +
-                                   string.Join("; ", roleResult.Errors.Select(e => e.Description));
-                    alertType = "danger";
-                    return false;
-                }
-            }
-            return true;
-        });
-
-        if (!updated) return;
-
-        alertMessage = $"Đã cập nhật thông tin tài khoản '{editingUser.UserName}'!";
-        alertType = "success";
-        showEditModal = false;
-        await LoadUsers();
     }
 
     private async Task DeleteUser(ApplicationUser user)
     {
-        if (user.UserName == UserService.CurrentUser?.UserName)
+        var currentAdminUsername = UserService.CurrentUser?.UserName ?? "";
+        if (user.UserName == currentAdminUsername)
         {
             alertMessage = "Bạn không thể tự xóa tài khoản Admin của chính mình!";
             alertType = "warning";
@@ -608,61 +524,21 @@
         bool confirmed = await JS.InvokeAsync<bool>("confirm", $"Bạn có chắc chắn muốn xóa tài khoản {user.UserName}?");
         if (!confirmed) return;
 
-        using var context = DbFactory.CreateDbContext();
-        bool hasOrders = await context.Orders.AnyAsync(o => o.UserId == user.Id);
-
-        await UserService.ExecuteWithLockAsync(async userManager =>
-        {
-            if (hasOrders)
-            {
-                user.IsActive = false;
-                await userManager.UpdateAsync(user);
-                alertMessage = $"Tài khoản '{user.UserName}' đã có lịch sử đơn hàng. Hệ thống đã tự động chuyển sang trạng thái KHÓA TÀI KHOẢN để bảo toàn dữ liệu kế toán & hóa đơn.";
-                alertType = "warning";
-            }
-            else
-            {
-                var res = await userManager.DeleteAsync(user);
-                if (res.Succeeded)
-                {
-                    alertMessage = $"Đã xóa vĩnh viễn tài khoản '{user.UserName}'.";
-                    alertType = "success";
-                }
-                else
-                {
-                    alertMessage = "Không thể xóa: " + string.Join("; ", res.Errors.Select(e => e.Description));
-                    alertType = "danger";
-                }
-            }
-        });
+        var result = await AdminAccountService.DeleteAccountAsync(currentAdminUsername, user);
+        alertMessage = result.Message;
+        alertType = result.Message.Contains("KHÓA VĨNH VIỄN") ? "warning" : (result.Success ? "success" : "danger");
 
         await LoadUsers();
     }
 
     private async Task ToggleLock(ApplicationUser user)
     {
-        if (user.UserName == UserService.CurrentUser?.UserName)
-        {
-            alertMessage = "Bạn không thể tự khóa tài khoản Admin của chính mình!";
-            alertType = "warning";
-            return;
-        }
+        var currentAdminUsername = UserService.CurrentUser?.UserName ?? "";
+        var result = await AdminAccountService.ToggleLockAsync(currentAdminUsername, user);
 
-        await UserService.ExecuteWithLockAsync(async userManager =>
-        {
-            user.IsActive = !user.IsActive;
-            var result = await userManager.UpdateAsync(user);
-            if (result.Succeeded)
-            {
-                alertMessage = $"Đã {(user.IsActive ? "MỞ KHÓA" : "KHÓA")} tài khoản {user.UserName}!";
-                alertType = user.IsActive ? "success" : "danger";
-            }
-            else
-            {
-                alertMessage = "Không thể cập nhật trạng thái tài khoản: " + string.Join("; ", result.Errors.Select(e => e.Description));
-                alertType = "danger";
-            }
-        });
+        alertMessage = result.Message;
+        alertType = result.Success ? (result.Message.Contains("MỞ KHÓA") ? "success" : "danger") : "warning";
+
         await LoadUsers();
     }
 }

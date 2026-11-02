@@ -1,11 +1,6 @@
-@inject Microsoft.AspNetCore.Identity.UserManager<ElectronicStore_mvc.Models.Entities.ApplicationUser> UserManager
+@inject ElectronicStore_mvc.Areas.Admin.Services.IAdminAccountService AdminAccountService
 @{
-    var currentUser = await UserManager.GetUserAsync(User);
-    var fullName = currentUser?.FullName;
-    if (string.IsNullOrWhiteSpace(fullName) || fullName.Contains("Quá") || fullName.Contains("Ã") || fullName.Contains("»") || fullName.Contains("Ä"))
-    {
-        fullName = "Quản Trị Viên Hệ Thống";
-    }
+    var fullName = await AdminAccountService.GetCurrentAdminDisplayNameAsync(User);
 }
 <!DOCTYPE html>
 <html lang="vi">

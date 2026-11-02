@@ -2,20 +2,20 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using ElectronicStore_razor.Models.Entities;
-using ElectronicStore_razor.Services;
+using ElectronicStore_razor.Services.Admin;
 
 namespace ElectronicStore_razor.Pages.Admin;
 
 [Authorize(Roles = "Admin")]
 public class ProductsModel : PageModel
 {
-    private readonly IProductService _productService;
-    private readonly ICategoryService _categoryService;
+    private readonly IAdminProductService _productService;
+    private readonly IAdminCategoryService _categoryService;
     private readonly IWebHostEnvironment _env;
 
     public ProductsModel(
-        IProductService productService,
-        ICategoryService categoryService,
+        IAdminProductService productService,
+        IAdminCategoryService categoryService,
         IWebHostEnvironment env)
     {
         _productService = productService;

@@ -2,17 +2,17 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using ElectronicStore_razor.Models.Entities;
-using ElectronicStore_razor.Services;
+using ElectronicStore_razor.Services.Admin;
 
 namespace ElectronicStore_razor.Pages.Admin;
 
 public class LoginModel : PageModel
 {
-    private readonly IAccountService _accountService;
+    private readonly IAdminAccountService _accountService;
     private readonly SignInManager<ApplicationUser> _signInManager;
 
     public LoginModel(
-        IAccountService accountService,
+        IAdminAccountService accountService,
         SignInManager<ApplicationUser> signInManager)
     {
         _accountService = accountService;

@@ -8,7 +8,7 @@ using ElectronicStore_mvc.Models.Entities;
 namespace ElectronicStore_mvc.Services;
 
 /// <summary>
-/// Triển khai nghiệp vụ giao dịch và đơn hàng
+/// Triển khai nghiệp vụ đơn hàng End-User
 /// </summary>
 public class OrderService : IOrderService
 {
@@ -53,11 +53,9 @@ public class OrderService : IOrderService
             return (false, "Vui lòng nhập đầy đủ Họ tên, Số điện thoại và Địa chỉ giao hàng!", 0);
         }
 
-        // Thực thi giao dịch với cấp độ cô lập Serializable để chống Race Condition đặt hàng đồng thời
         await using var transaction = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
         try
         {
-            // 1. Kiểm tra tồn kho và trạng thái của từng sản phẩm
             foreach (var item in cart)
             {
                 var prod = await _context.Products.Include(p => p.Category).FirstOrDefaultAsync(p => p.Id == item.ProductId);
@@ -77,7 +75,6 @@ public class OrderService : IOrderService
                 item.UnitPrice = prod.Price;
             }
 
-            // 2. Cập nhật thông tin người dùng nếu đã đăng nhập và tài khoản chưa có thông tin
             if (!string.IsNullOrEmpty(currentUserId))
             {
                 var user = await _userManager.FindByIdAsync(currentUserId);
@@ -106,7 +103,6 @@ public class OrderService : IOrderService
                 }
             }
 
-            // 3. Tạo hóa đơn Order
             var order = new Order
             {
                 UserId = currentUserId,
@@ -122,7 +118,6 @@ public class OrderService : IOrderService
             _context.Orders.Add(order);
             await _context.SaveChangesAsync();
 
-            // 4. Lưu chi tiết hóa đơn OrderDetails và trừ tồn kho
             foreach (var item in cart)
             {
                 var orderDetail = new OrderDetail
@@ -162,7 +157,6 @@ public class OrderService : IOrderService
                 .ThenInclude(od => od.Product)
             .AsQueryable();
 
-        // Nếu khách tra cứu theo SĐT: chỉ lấy đơn hàng vãng lai trùng SĐT hoặc đơn của chính tài khoản đang đăng nhập
         if (!string.IsNullOrWhiteSpace(lookupPhone))
         {
             var phoneTrim = lookupPhone.Trim();
@@ -171,7 +165,6 @@ public class OrderService : IOrderService
         }
         else if (!string.IsNullOrEmpty(userId))
         {
-            // Nếu đã đăng nhập: lấy đơn theo UserId hoặc đơn khách vãng lai có SĐT trùng SĐT tài khoản
             var phoneTrim = userPhone?.Trim();
             query = query.Where(o => o.UserId == userId ||
                                      (string.IsNullOrEmpty(o.UserId) && !string.IsNullOrEmpty(phoneTrim) && o.ReceiverPhone == phoneTrim));
@@ -196,7 +189,6 @@ public class OrderService : IOrderService
         if (order == null) return null;
         if (isAdmin) return order;
 
-        // Kiểm tra quyền sở hữu đơn hàng (IDOR Protection)
         var effectivePhone = !string.IsNullOrWhiteSpace(lookupPhone) ? lookupPhone.Trim() : userPhone?.Trim();
         bool ownsOrder = (!string.IsNullOrEmpty(userId) && order.UserId == userId) ||
                          (lastGuestOrderId.HasValue && lastGuestOrderId.Value == orderId) ||
@@ -217,7 +209,6 @@ public class OrderService : IOrderService
             return (false, "Không tìm thấy đơn hàng cần hủy.");
         }
 
-        // Kiểm tra quyền sở hữu chống IDOR
         if (!string.IsNullOrEmpty(userId))
         {
             var effectivePhone = !string.IsNullOrWhiteSpace(lookupPhone) ? lookupPhone.Trim() : userPhone?.Trim();
@@ -251,7 +242,6 @@ public class OrderService : IOrderService
             return (false, "Đơn hàng đang giao hoặc đã hoàn tất/đã hủy, không thể hủy.");
         }
 
-        // Hoàn lại số lượng tồn kho cho từng sản phẩm trong đơn
         foreach (var detail in order.OrderDetails)
         {
             var product = await _context.Products.FindAsync(detail.ProductId);
@@ -265,104 +255,5 @@ public class OrderService : IOrderService
         await _context.SaveChangesAsync();
 
         return (true, $"Đã hủy thành công đơn hàng #ES{order.Id:D7}. Số lượng sản phẩm đã được tự động hoàn lại vào kho.");
-    }
-
-    public async Task<OrderAdminResult> GetAdminOrdersAsync(string? status, string? search)
-    {
-        var allOrders = await _context.Orders.ToListAsync();
-
-        int totalOrdersCount = allOrders.Count;
-        int pendingCount = allOrders.Count(o => NormalizeStatus(o.OrderStatus) == "Pending");
-        int shippingCount = allOrders.Count(o => NormalizeStatus(o.OrderStatus) == "Shipping");
-        int completedCount = allOrders.Count(o => NormalizeStatus(o.OrderStatus) == "Completed");
-        decimal totalRevenue = allOrders
-            .Where(o => NormalizeStatus(o.OrderStatus) == "Completed")
-            .Sum(o => o.TotalAmount);
-
-        var query = _context.Orders
-            .Include(o => o.User)
-            .Include(o => o.OrderDetails)
-                .ThenInclude(od => od.Product)
-            .AsQueryable();
-
-        var normalizedStatus = NormalizeStatus(status);
-        if (!string.IsNullOrWhiteSpace(normalizedStatus) && normalizedStatus != "All")
-        {
-            query = query.Where(o => o.OrderStatus == normalizedStatus ||
-                                     (normalizedStatus == "Pending" && o.OrderStatus == "Chờ xử lý") ||
-                                     (normalizedStatus == "Confirmed" && o.OrderStatus == "Đã duyệt") ||
-                                     (normalizedStatus == "Shipping" && (o.OrderStatus == "Đang giao" || o.OrderStatus == "Đang giao hàng")) ||
-                                     (normalizedStatus == "Completed" && (o.OrderStatus == "Hoàn thành" || o.OrderStatus == "Đã giao" || o.OrderStatus == "Hoàn tất")) ||
-                                     (normalizedStatus == "Cancelled" && o.OrderStatus == "Đã hủy"));
-        }
-
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            var kw = search.Trim().ToLower();
-            query = query.Where(o => o.Id.ToString().Contains(kw) ||
-                                     o.ReceiverName.ToLower().Contains(kw) ||
-                                     o.ReceiverPhone.Contains(kw));
-        }
-
-        var orders = await query.OrderByDescending(o => o.OrderDate).ToListAsync();
-
-        return new OrderAdminResult
-        {
-            Orders = orders,
-            TotalOrdersCount = totalOrdersCount,
-            PendingCount = pendingCount,
-            ShippingCount = shippingCount,
-            CompletedCount = completedCount,
-            TotalRevenue = totalRevenue
-        };
-    }
-
-    public async Task<(bool Success, string Message)> UpdateOrderStatusAsync(int orderId, string newStatus)
-    {
-        var order = await _context.Orders
-            .Include(o => o.OrderDetails)
-            .FirstOrDefaultAsync(o => o.Id == orderId);
-
-        if (order == null)
-        {
-            return (false, "Không tìm thấy đơn hàng!");
-        }
-
-        var oldNormalized = NormalizeStatus(order.OrderStatus);
-        var newNormalized = NormalizeStatus(newStatus);
-
-        // Trường hợp 1: Chuyển từ trạng thái khác sang Cancelled -> Hoàn trả tồn kho
-        if (oldNormalized != "Cancelled" && newNormalized == "Cancelled")
-        {
-            foreach (var detail in order.OrderDetails)
-            {
-                var prod = await _context.Products.FindAsync(detail.ProductId);
-                if (prod != null)
-                {
-                    prod.Quantity += detail.Quantity;
-                }
-            }
-        }
-        // Trường hợp 2: Khôi phục đơn hàng đã Cancelled -> Trừ lại kho nếu còn đủ hàng
-        else if (oldNormalized == "Cancelled" && newNormalized != "Cancelled")
-        {
-            foreach (var detail in order.OrderDetails)
-            {
-                var prod = await _context.Products.FindAsync(detail.ProductId);
-                if (prod != null)
-                {
-                    if (prod.Quantity < detail.Quantity)
-                    {
-                        return (false, $"Không thể khôi phục đơn hàng! Sản phẩm '{prod.Name}' chỉ còn {prod.Quantity} chiếc trong kho (đơn hàng cần {detail.Quantity} chiếc).");
-                    }
-                    prod.Quantity -= detail.Quantity;
-                }
-            }
-        }
-
-        order.OrderStatus = newNormalized;
-        await _context.SaveChangesAsync();
-
-        return (true, $"Đã cập nhật trạng thái đơn hàng #{order.Id} thành: {newNormalized}");
     }
 }

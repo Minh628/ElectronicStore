@@ -1,39 +1,34 @@
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using ElectronicStore_mvc.Models.Entities;
-using ElectronicStore_mvc.Areas.Admin.Models;
-using ElectronicStore_mvc.Services;
+using ElectronicStore_mvc.Areas.Admin.Services;
 
 namespace ElectronicStore_mvc.Areas.Admin.Controllers;
 
 /// <summary>
-/// Controller trung tâm phân hệ Quản trị (Thin Controller - điều phối qua các Domain Services)
+/// Controller trung tâm phân hệ Quản trị (Thin Controller - điều phối qua các Admin Services riêng biệt)
 /// </summary>
 [Area("Admin")]
 [Authorize(Roles = "Admin")]
 public class AdminController : Controller
 {
-    private readonly IProductService _productService;
-    private readonly ICategoryService _categoryService;
-    private readonly IOrderService _orderService;
-    private readonly IAccountService _accountService;
-    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IAdminProductService _productService;
+    private readonly IAdminCategoryService _categoryService;
+    private readonly IAdminOrderService _orderService;
+    private readonly IAdminAccountService _accountService;
     private readonly IWebHostEnvironment _env;
 
     public AdminController(
-        IProductService productService,
-        ICategoryService categoryService,
-        IOrderService orderService,
-        IAccountService accountService,
-        UserManager<ApplicationUser> userManager,
+        IAdminProductService productService,
+        IAdminCategoryService categoryService,
+        IAdminOrderService orderService,
+        IAdminAccountService accountService,
         IWebHostEnvironment env)
     {
         _productService = productService;
         _categoryService = categoryService;
         _orderService = orderService;
         _accountService = accountService;
-        _userManager = userManager;
         _env = env;
     }
 
@@ -175,7 +170,7 @@ public class AdminController : Controller
     #endregion
 
     #region 3. QUẢN LÝ ĐƠN HÀNG (ORDERS)
-    public static string NormalizeStatus(string? status) => OrderService.NormalizeStatusStatic(status);
+    public static string NormalizeStatus(string? status) => AdminOrderService.NormalizeStatusStatic(status);
 
     public async Task<IActionResult> Orders(string? status, string? search)
     {
@@ -212,13 +207,7 @@ public class AdminController : Controller
     #region 4. QUẢN LÝ TÀI KHOẢN (ACCOUNTS)
     public async Task<IActionResult> Accounts(string? search)
     {
-        var dtos = await _accountService.GetAdminAccountsAsync(search);
-        var list = dtos.Select(d => new UserAccountViewModel
-        {
-            User = d.User,
-            Role = d.Role
-        }).ToList();
-
+        var list = await _accountService.GetAdminAccountsAsync(search);
         ViewBag.SearchKeyword = search;
         return View(list);
     }
@@ -244,7 +233,7 @@ public class AdminController : Controller
     public async Task<IActionResult> UpdateAccount(
         string userId, string fullName, string email, string phone, string address, string role, string? search)
     {
-        var currentAdminId = _userManager.GetUserId(User) ?? string.Empty;
+        var currentAdminId = _accountService.GetCurrentAdminId(User);
         var result = await _accountService.UpdateAccountAsync(currentAdminId, userId, fullName, email, phone, address, role);
 
         if (result.Success)
@@ -262,7 +251,7 @@ public class AdminController : Controller
     [HttpPost]
     public async Task<IActionResult> DeleteAccount(string userId, string? search)
     {
-        var currentAdminId = _userManager.GetUserId(User) ?? string.Empty;
+        var currentAdminId = _accountService.GetCurrentAdminId(User);
         var result = await _accountService.DeleteAccountAsync(currentAdminId, userId);
 
         if (result.Success)
@@ -287,7 +276,7 @@ public class AdminController : Controller
     [HttpPost]
     public async Task<IActionResult> ToggleAccountLock(string userId, string? search)
     {
-        var currentAdminId = _userManager.GetUserId(User) ?? string.Empty;
+        var currentAdminId = _accountService.GetCurrentAdminId(User);
         var result = await _accountService.ToggleAccountLockAsync(currentAdminId, userId);
 
         if (result.Success)

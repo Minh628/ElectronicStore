@@ -66,6 +66,12 @@ builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IAccountService, AccountService>();
 
+// Phân hệ Admin Services riêng biệt
+builder.Services.AddScoped<ElectronicStore_razor.Services.Admin.IAdminCategoryService, ElectronicStore_razor.Services.Admin.AdminCategoryService>();
+builder.Services.AddScoped<ElectronicStore_razor.Services.Admin.IAdminProductService, ElectronicStore_razor.Services.Admin.AdminProductService>();
+builder.Services.AddScoped<ElectronicStore_razor.Services.Admin.IAdminOrderService, ElectronicStore_razor.Services.Admin.AdminOrderService>();
+builder.Services.AddScoped<ElectronicStore_razor.Services.Admin.IAdminAccountService, ElectronicStore_razor.Services.Admin.AdminAccountService>();
+
 // Đăng ký dịch vụ Razor Pages với các Route alias chuẩn Blazor
 builder.Services.AddRazorPages(options =>
 {

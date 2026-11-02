@@ -68,6 +68,12 @@ builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IAccountService, AccountService>();
 
+// Phân hệ Admin Services riêng biệt
+builder.Services.AddScoped<ElectronicStore_mvc.Areas.Admin.Services.IAdminCategoryService, ElectronicStore_mvc.Areas.Admin.Services.AdminCategoryService>();
+builder.Services.AddScoped<ElectronicStore_mvc.Areas.Admin.Services.IAdminProductService, ElectronicStore_mvc.Areas.Admin.Services.AdminProductService>();
+builder.Services.AddScoped<ElectronicStore_mvc.Areas.Admin.Services.IAdminOrderService, ElectronicStore_mvc.Areas.Admin.Services.AdminOrderService>();
+builder.Services.AddScoped<ElectronicStore_mvc.Areas.Admin.Services.IAdminAccountService, ElectronicStore_mvc.Areas.Admin.Services.AdminAccountService>();
+
 builder.Services.AddControllersWithViews(options =>
 {
     options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());

@@ -1,6 +1,8 @@
 @page "/admin/products"
 @layout AdminLayout
-@inject IProductService ProductService
+@inject ElectronicStore_blazor.Services.Admin.IAdminProductService AdminProductService
+@inject ElectronicStore_blazor.Services.Admin.IAdminCategoryService AdminCategoryService
+@inject IWebHostEnvironment Env
 @inject IJSRuntime JS
 
 <PageTitle>Admin - Quản Lý Sản Phẩm - ElectroStore</PageTitle>
@@ -402,19 +404,20 @@
 @code {
     private List<Product> products = new();
     private List<Category> categories = new();
+    private Product inputProduct = new();
+    private int selectedCategoryId = 0;
+    private string searchKeyword = "";
+    private int currentPage = 1;
+    private int pageSize = 10;
     private int totalCount = 0;
+    private int totalPages = 1;
+
+    // KPI stats
     private int totalSystemProducts = 0;
     private int inStockCount = 0;
     private int lowOrOutCount = 0;
-    private int totalPages = 1;
-    private int currentPage = 1;
-    private const int pageSize = 10;
-
-    private string? searchKeyword;
-    private int selectedCategoryId = 0;
 
     private bool showModal = false;
-    private Product inputProduct = new();
     private string imageSource = "url";
     private string? alertMessage;
     private string? alertType;
@@ -427,33 +430,24 @@
 
     private void LoadCategories()
     {
-        categories = ProductService.GetCategories();
+        categories = AdminCategoryService.GetCategories();
     }
 
     private void LoadProducts()
     {
-        var all = ProductService.GetAllAdminProducts();
-        totalSystemProducts = all.Count;
-        inStockCount = all.Count(p => p.Quantity > 0);
-        lowOrOutCount = all.Count(p => p.Quantity <= 5);
+        var result = AdminProductService.GetAdminProducts(
+            selectedCategoryId > 0 ? selectedCategoryId : null,
+            searchKeyword,
+            currentPage,
+            pageSize);
 
-        if (selectedCategoryId > 0)
-        {
-            all = all.Where(p => p.CategoryId == selectedCategoryId).ToList();
-        }
-
-        if (!string.IsNullOrWhiteSpace(searchKeyword))
-        {
-            all = all.Where(p => p.Name.Contains(searchKeyword, StringComparison.OrdinalIgnoreCase) ||
-                                 p.Brand.Contains(searchKeyword, StringComparison.OrdinalIgnoreCase)).ToList();
-        }
-
-        totalCount = all.Count;
-        totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
-        if (totalPages < 1) totalPages = 1;
-        if (currentPage > totalPages) currentPage = totalPages;
-
-        products = all.Skip((currentPage - 1) * pageSize).Take(pageSize).ToList();
+        totalSystemProducts = result.TotalSystemProducts;
+        inStockCount = result.InStockCount;
+        lowOrOutCount = result.LowOrOutCount;
+        totalCount = result.TotalCount;
+        totalPages = result.TotalPages;
+        currentPage = result.CurrentPage;
+        products = result.Products;
     }
 
     private void ApplyFilter()
@@ -537,22 +531,11 @@
         {
             try
             {
-                var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "products");
-                if (!Directory.Exists(folderPath))
+                var uploadedUrl = await AdminProductService.SaveProductImageAsync(file, Env.WebRootPath);
+                if (!string.IsNullOrEmpty(uploadedUrl))
                 {
-                    Directory.CreateDirectory(folderPath);
+                    inputProduct.ImageUrl = uploadedUrl;
                 }
-
-                var fileName = $"{Guid.NewGuid()}_{file.Name}";
-                var filePath = Path.Combine(folderPath, fileName);
-
-                using (var stream = file.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024))
-                using (var fs = new FileStream(filePath, FileMode.Create))
-                {
-                    await stream.CopyToAsync(fs);
-                }
-
-                inputProduct.ImageUrl = $"/images/products/{fileName}";
             }
             catch (Exception ex)
             {
@@ -575,12 +558,12 @@
         {
             if (inputProduct.Id == 0)
             {
-                ProductService.AddProduct(inputProduct);
+                AdminProductService.AddProduct(inputProduct);
                 alertMessage = "Thêm thiết bị mới thành công!";
             }
             else
             {
-                ProductService.UpdateProduct(inputProduct);
+                AdminProductService.UpdateProduct(inputProduct);
                 alertMessage = "Cập nhật thiết bị thành công!";
             }
             alertType = "success";
@@ -596,8 +579,8 @@
 
     private void ToggleActive(Product p)
     {
+        AdminProductService.ToggleProductActive(p.Id);
         p.IsActive = !p.IsActive;
-        ProductService.UpdateProduct(p);
         alertMessage = $"Đã {(p.IsActive ? "bật hiển thị" : "tạm ẩn")} thiết bị {p.Name}!";
         alertType = "info";
     }
@@ -607,7 +590,7 @@
         bool confirmed = await JS.InvokeAsync<bool>("confirm", "Bạn có chắc chắn muốn xóa thiết bị này khỏi hệ thống?");
         if (!confirmed) return;
 
-        var res = ProductService.DeleteProductWithStatus(id);
+        var res = AdminProductService.DeleteProductWithStatus(id);
         if (res.Success)
         {
             if (res.SoftDeleted)

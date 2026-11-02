@@ -2,16 +2,16 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using ElectronicStore_razor.Models.Entities;
-using ElectronicStore_razor.Services;
+using ElectronicStore_razor.Services.Admin;
 
 namespace ElectronicStore_razor.Pages.Admin;
 
 [Authorize(Roles = "Admin")]
 public class CategoriesModel : PageModel
 {
-    private readonly ICategoryService _categoryService;
+    private readonly IAdminCategoryService _categoryService;
 
-    public CategoriesModel(ICategoryService categoryService)
+    public CategoriesModel(IAdminCategoryService categoryService)
     {
         _categoryService = categoryService;
     }

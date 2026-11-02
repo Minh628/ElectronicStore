@@ -1,5 +1,6 @@
 @page "/"
 @inject IProductService ProductService
+@inject ICategoryService CategoryService
 @inject CartService Cart
 @inject NavigationManager Navigation
 @implements IDisposable
@@ -456,7 +457,7 @@
     {
         // Tải danh sách sản phẩm và danh mục đang hoạt động (tự động loại bỏ danh mục ẩn và sản phẩm thuộc danh mục ẩn)
         allProducts = ProductService.GetAllProducts();
-        categories = ProductService.GetCategories().Where(c => c.IsActive).ToList();
+        categories = CategoryService.GetActiveCategories();
         brands = allProducts.Select(p => p.Brand).Distinct().OrderBy(b => b).ToList();
     }
 

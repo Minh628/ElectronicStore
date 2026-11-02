@@ -39,6 +39,12 @@ builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<ProductService>();
 builder.Services.AddScoped<IProductService>(sp => sp.GetRequiredService<ProductService>());
 builder.Services.AddScoped<CartService>();
+
+// Phân hệ Admin Services riêng biệt
+builder.Services.AddScoped<ElectronicStore_blazor.Services.Admin.IAdminCategoryService, ElectronicStore_blazor.Services.Admin.AdminCategoryService>();
+builder.Services.AddScoped<ElectronicStore_blazor.Services.Admin.IAdminProductService, ElectronicStore_blazor.Services.Admin.AdminProductService>();
+builder.Services.AddScoped<ElectronicStore_blazor.Services.Admin.IAdminOrderService, ElectronicStore_blazor.Services.Admin.AdminOrderService>();
+builder.Services.AddScoped<ElectronicStore_blazor.Services.Admin.IAdminAccountService, ElectronicStore_blazor.Services.Admin.AdminAccountService>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<AuthenticationStateProvider, BlazorAuthStateProvider>();
 

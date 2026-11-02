@@ -1,24 +1,19 @@
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using ElectronicStore_razor.Models.Entities;
-using ElectronicStore_razor.Services;
+using ElectronicStore_razor.Services.Admin;
 
 namespace ElectronicStore_razor.Pages.Admin;
 
 [Authorize(Roles = "Admin")]
 public class AccountsModel : PageModel
 {
-    private readonly IAccountService _accountService;
-    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IAdminAccountService _accountService;
 
-    public AccountsModel(
-        IAccountService accountService,
-        UserManager<ApplicationUser> userManager)
+    public AccountsModel(IAdminAccountService accountService)
     {
         _accountService = accountService;
-        _userManager = userManager;
     }
 
     public List<ApplicationUser> Users { get; set; } = new();
@@ -45,7 +40,7 @@ public class AccountsModel : PageModel
     }
 
     /// <summary>
-    /// Thêm tài khoản người dùng mới qua AccountService
+    /// Thêm tài khoản người dùng mới qua AdminAccountService
     /// </summary>
     public async Task<IActionResult> OnPostCreateUserAsync(string username, string fullName, string email, string phone, string address, string password, string role)
     {
@@ -56,12 +51,11 @@ public class AccountsModel : PageModel
     }
 
     /// <summary>
-    /// Cập nhật thông tin và vai trò của tài khoản qua AccountService
+    /// Cập nhật thông tin và vai trò của tài khoản qua AdminAccountService
     /// </summary>
     public async Task<IActionResult> OnPostUpdateUserAsync(string userId, string fullName, string email, string phone, string address, string role)
     {
-        var currentAdmin = await _userManager.GetUserAsync(User);
-        var currentAdminId = currentAdmin?.Id ?? string.Empty;
+        var currentAdminId = _accountService.GetCurrentAdminId(User);
 
         var result = await _accountService.UpdateAccountAsync(currentAdminId, userId, fullName, email, phone, address, role);
         AlertMessage = result.Message;
@@ -70,12 +64,11 @@ public class AccountsModel : PageModel
     }
 
     /// <summary>
-    /// Xóa tài khoản qua AccountService (tự động khóa nếu có đơn hàng)
+    /// Xóa tài khoản qua AdminAccountService (tự động khóa nếu có đơn hàng)
     /// </summary>
     public async Task<IActionResult> OnPostDeleteUserAsync(string userId)
     {
-        var currentAdmin = await _userManager.GetUserAsync(User);
-        var currentAdminId = currentAdmin?.Id ?? string.Empty;
+        var currentAdminId = _accountService.GetCurrentAdminId(User);
 
         var result = await _accountService.DeleteAccountAsync(currentAdminId, userId);
         AlertMessage = result.Message;
@@ -84,30 +77,15 @@ public class AccountsModel : PageModel
     }
 
     /// <summary>
-    /// Khóa hoặc Mở khóa tài khoản người dùng
+    /// Khóa hoặc Mở khóa tài khoản người dùng qua AdminAccountService
     /// </summary>
     public async Task<IActionResult> OnPostToggleActiveAsync(string userId)
     {
-        var currentAdmin = await _userManager.GetUserAsync(User);
-        var currentAdminId = currentAdmin?.Id ?? string.Empty;
+        var currentAdminId = _accountService.GetCurrentAdminId(User);
 
-        var user = await _userManager.FindByIdAsync(userId);
-        if (user == null) return RedirectToPage(new { SearchKeyword });
-
-        if (user.Id == currentAdminId)
-        {
-            AlertMessage = "Bạn không thể tự khóa tài khoản Admin của chính mình!";
-            AlertType = "warning";
-            return RedirectToPage(new { SearchKeyword });
-        }
-
-        user.IsActive = !user.IsActive;
-        await _userManager.UpdateAsync(user);
-
-        AlertMessage = user.IsActive 
-            ? $"Đã MỞ KHÓA tài khoản '{user.UserName}' thành công!" 
-            : $"Đã KHÓA tài khoản '{user.UserName}'! Người này sẽ không thể đăng nhập.";
-        AlertType = user.IsActive ? "success" : "danger";
+        var result = await _accountService.ToggleAccountLockAsync(currentAdminId, userId);
+        AlertMessage = result.Message;
+        AlertType = result.Success ? (result.Message.Contains("MỞ KHÓA") ? "success" : "danger") : "warning";
 
         return RedirectToPage(new { SearchKeyword });
     }

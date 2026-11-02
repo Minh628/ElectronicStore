@@ -2,16 +2,16 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using ElectronicStore_razor.Models.Entities;
-using ElectronicStore_razor.Services;
+using ElectronicStore_razor.Services.Admin;
 
 namespace ElectronicStore_razor.Pages.Admin;
 
 [Authorize(Roles = "Admin")]
 public class OrdersModel : PageModel
 {
-    private readonly IOrderService _orderService;
+    private readonly IAdminOrderService _orderService;
 
-    public OrdersModel(IOrderService orderService)
+    public OrdersModel(IAdminOrderService orderService)
     {
         _orderService = orderService;
     }
@@ -36,7 +36,7 @@ public class OrdersModel : PageModel
     [TempData]
     public string? AlertType { get; set; }
 
-    public static string NormalizeStatus(string? status) => OrderService.NormalizeStatusStatic(status);
+    public static string NormalizeStatus(string? status) => AdminOrderService.NormalizeStatusStatic(status);
 
     public async Task OnGetAsync()
     {

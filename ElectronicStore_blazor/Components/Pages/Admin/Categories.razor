@@ -1,6 +1,6 @@
 @page "/admin/categories"
 @layout AdminLayout
-@inject ICategoryService CategoryService
+@inject ElectronicStore_blazor.Services.Admin.IAdminCategoryService AdminCategoryService
 @inject IJSRuntime JS
 
 <PageTitle>Admin - Quản Lý Danh Mục - ElectroStore</PageTitle>
@@ -224,7 +224,7 @@
 
     private void LoadCategories()
     {
-        categories = CategoryService.GetCategories();
+        categories = AdminCategoryService.GetCategories();
     }
 
     private void OpenAddModal()
@@ -235,7 +235,7 @@
 
     private void ToggleCategoryActive(Category c)
     {
-        if (CategoryService.ToggleCategoryActive(c.Id))
+        if (AdminCategoryService.ToggleCategoryActive(c.Id))
         {
             LoadCategories();
             var updated = categories.FirstOrDefault(x => x.Id == c.Id);
@@ -270,7 +270,7 @@
 
         try
         {
-            CategoryService.SaveCategory(inputCategory);
+            AdminCategoryService.SaveCategory(inputCategory);
             alertMessage = inputCategory.Id == 0 ? "Thêm danh mục thành công!" : "Cập nhật danh mục thành công!";
             alertType = "success";
             showModal = false;
@@ -285,11 +285,10 @@
 
     private async Task DeleteCategory(int id)
     {
-        // Xác nhận trước khi xóa danh mục
         bool confirmed = await JS.InvokeAsync<bool>("confirm", "Bạn có chắc chắn muốn xóa danh mục này?");
         if (!confirmed) return;
 
-        var result = CategoryService.DeleteCategory(id);
+        var result = AdminCategoryService.DeleteCategory(id);
         if (result.Success)
         {
             alertMessage = result.Message;
